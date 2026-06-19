@@ -41,7 +41,7 @@ def _extract_org(item: dict) -> dict:
         "org_type": "|".join(types) if types else None,
         "status": item.get("status"),
         "established_year": item.get("established"),
-        "country_code": item.get("country", {}).get("country_code"),
+        "country_code": geo.get("country_code"),
         "location_name": geo.get("name"),
         "lat": geo.get("lat"),
         "lng": geo.get("lng"),
@@ -62,7 +62,8 @@ def _fetch_country(cc: str, data_dir: Path) -> int:
     while True:
         resp = requests.get(
             BASE_URL,
-            params={"query": "*", "filter": f"country.country_code:{cc}", "page": page},
+            # omit query param so results use stable default ordering (not relevance)
+            params={"filter": f"country.country_code:{cc}", "page": page},
             timeout=30,
         )
         resp.raise_for_status()
@@ -73,8 +74,8 @@ def _fetch_country(cc: str, data_dir: Path) -> int:
         out = data_dir / f"page_{cc}_{page:03d}.json"
         out.write_text(json.dumps(data))
         total_fetched += len(items)
-        meta = data.get("meta", {})
-        if page * meta.get("per_page", 20) >= meta.get("total", 0):
+        # ROR v2 returns total at top level as number_of_results (not inside meta)
+        if total_fetched >= data.get("number_of_results", 0):
             break
         page += 1
         time.sleep(0.1)
