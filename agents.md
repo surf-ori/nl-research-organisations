@@ -65,12 +65,15 @@ Every `src/*.py` stage is a marimo notebook that also works as a Python module. 
    def fetch(force_refresh: bool = False) -> dict:
        # fetch and cache to data/raw/mysource/
        # write data/raw/mysource/_metadata.json
-       return {"record_count": int, "fetched_at": "ISO8601", "output_path": str}
+       # Data-fetching stages return source_url; the assembler returns output_path instead.
+       return {"record_count": int, "fetched_at": "ISO8601", "source_url": str}
 
    def load_results() -> dict[str, str | None]:
        # return {ror_id_url: value_or_none}
        return {}
    ```
+   Note: `src/assembler.py` is the exception — its `fetch()` returns `output_path` (the path to the
+   written parquet) instead of `source_url`, because it produces a file rather than fetching from a URL.
 3. Import and call in `src/assembler.py` to add the column
 4. Add a stage card in `notebook.py` STAGE_META dict
 5. Add to `pipeline.py` ORDER list

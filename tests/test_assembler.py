@@ -62,7 +62,6 @@ def test_assemble_produces_parquet(tmp_path, ror_page_nl):
          patch("src.ror_fetcher.DATA_DIR", raw / "ror"), \
          patch("src.zenodo_baseline.DATA_DIR", raw / "zenodo"), \
          patch("src.barcelona.DATA_DIR", raw / "barcelona"), \
-         patch("src.barcelona.CSV_PATH", raw / "barcelona" / "signatories.csv"), \
          patch("src.openalex.DATA_DIR", raw / "openalex"), \
          patch("src.openaire.DATA_DIR", raw / "openaire"), \
          patch("src.memberships.CURATED_DIR", curated):

@@ -95,8 +95,10 @@ Pull requests welcome. To add a new data source, implement the module contract i
 
 ```python
 def fetch(force_refresh: bool = False) -> dict:
-    return {"record_count": int, "fetched_at": str, "output_path": str}
+    return {"record_count": int, "fetched_at": str, "source_url": str}
 ```
+
+Data-fetching stages return `source_url`. The assembler (`src/assembler.py`) is the exception: it returns `output_path` (the path to the written parquet file) instead of `source_url`.
 
 See `agents.md` for the full module contract.
 

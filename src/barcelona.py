@@ -16,7 +16,6 @@ app = mo.App(width="wide")
 
 DATA_DIR = Path("data/raw/barcelona")
 CSV_URL = "https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv"
-CSV_PATH = DATA_DIR / "signatories.csv"
 FUZZY_THRESHOLD = 0.85
 
 

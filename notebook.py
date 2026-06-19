@@ -337,11 +337,19 @@ def _membership_curation(mo, pd, CURATED_DIR, llm_base_url, llm_api_key, llm_mod
         def _llm_handler(_, _editor=editor, _path=path, _csv=csv_file, _url=source_url):
             """Ask the configured LLM to suggest updates to this membership list."""
             try:
+                import io as _io
+                import csv as _csv_mod
                 from src.llm_curator import curate_csv as _curate_csv
                 current = _path.read_text() if _path.exists() else ""
                 updated = _curate_csv(_url, current, llm_base_url.value, llm_api_key.value, llm_model_live.value)
-                _path.write_text(updated)
-                set_save_status(lambda d, f=_csv: {**d, f: "llm-updated"})
+                # Validate the LLM output parses as CSV with required columns before writing
+                reader = _csv_mod.DictReader(_io.StringIO(updated))
+                fieldnames = reader.fieldnames or []
+                if "ror_id_url" not in fieldnames or "name" not in fieldnames:
+                    set_save_status(lambda d, f=_csv: {**d, f: "error: LLM output missing required columns"})
+                else:
+                    _path.write_text(updated)
+                    set_save_status(lambda d, f=_csv: {**d, f: "llm-updated"})
             except Exception as e:
                 set_save_status(lambda d, f=_csv, err=str(e): {**d, f: f"error: {err}"})
 
