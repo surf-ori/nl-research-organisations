@@ -1,0 +1,40 @@
+{
+  "items": [
+    {
+      "id": "https://ror.org/04dkp9463",
+      "names": [
+        {"value": "Vrije Universiteit Amsterdam", "types": ["ror_display", "label"], "lang": "en"},
+        {"value": "VU Amsterdam", "types": ["alias"], "lang": null},
+        {"value": "VU", "types": ["acronym"], "lang": null}
+      ],
+      "types": ["education"],
+      "status": "active",
+      "established": 1880,
+      "locations": [
+        {
+          "geonames_id": 2759794,
+          "geonames_details": {
+            "id": 2759794,
+            "name": "Amsterdam",
+            "lat": 52.37403,
+            "lng": 4.88969,
+            "country_code": "NL",
+            "country_name": "Netherlands"
+          }
+        }
+      ],
+      "links": [
+        {"type": "website", "value": "https://vu.nl"},
+        {"type": "wikipedia", "value": "https://en.wikipedia.org/wiki/Vrije_Universiteit_Amsterdam"}
+      ],
+      "external_ids": [
+        {"type": "isni", "all": ["0000 0001 2248 2840"], "preferred": "0000 0001 2248 2840"},
+        {"type": "wikidata", "all": ["Q1065919"], "preferred": "Q1065919"},
+        {"type": "grid", "all": ["grid.12380.38"], "preferred": "grid.12380.38"},
+        {"type": "fundref", "all": ["501100001833"], "preferred": "501100001833"}
+      ],
+      "country": {"country_code": "NL", "country_name": "Netherlands"}
+    }
+  ],
+  "meta": {"total": 1, "page": 1, "per_page": 20}
+}
