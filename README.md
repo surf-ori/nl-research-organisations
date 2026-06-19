@@ -1,0 +1,105 @@
+# NL Research Organisations
+
+A marimo notebook that builds and maintains a comprehensive reference table of all research organisations in the Kingdom of the Netherlands (NL, AW, CW, SX, BQ), enriched with identifiers from multiple databases.
+
+## What it produces
+
+- `data/nl_research_orgs.parquet` — primary output for downstream tools
+- `data/nl_research_orgs.csv` — human-readable version
+
+Both files are committed to this repository so you can use them without running the pipeline.
+
+## Data sources
+
+| Source | Provides | Auto-fetch? |
+|--------|----------|------------|
+| ROR API | 20 base columns per organisation | Yes |
+| Zenodo ORI baseline | `ori_base_org` flag | Yes |
+| OpenAlex | `openalex_institution_id` | Yes (needs API key) |
+| OpenAIRE | `openaire_org_id` | Yes (needs refresh token) |
+| Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
+| SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
+| ALEI / KVK | `alei_id` | Placeholder |
+| EU PIC | `pic_id` | Placeholder |
+
+## Quickstart
+
+```bash
+uvx marimo run notebook.py
+```
+
+## Headless / CLI
+
+```bash
+uvx marimo run pipeline.py -- --source all
+uvx marimo run pipeline.py -- --source ror --force-refresh true
+```
+
+## API keys
+
+Copy `.env.example` to `.env` and fill in your keys:
+
+```bash
+cp .env.example .env
+```
+
+See `.env.example` for all available options including LLM provider configuration.
+
+## Updating membership lists
+
+Open the notebook (`uvx marimo run notebook.py`), go to **Tab 4 — Membership Curation**. Each membership source shows an editable table and an "LLM Auto-update" button. Configure your LLM provider first in **Tab 3 — LLM Configuration**.
+
+## Column reference
+
+| Column | Source | Type |
+|--------|--------|------|
+| `name` | ROR | string |
+| `acronym` | ROR | string |
+| `aliases` | ROR | string (pipe-separated) |
+| `ror_id` | ROR | string |
+| `ror_id_url` | ROR | string |
+| `org_type` | ROR | string |
+| `status` | ROR | string |
+| `established_year` | ROR | int |
+| `country_code` | ROR | string |
+| `location_name` | ROR | string |
+| `lat` | ROR | float |
+| `lng` | ROR | float |
+| `geonames_id` | ROR | int |
+| `website_url` | ROR | string |
+| `wikipedia_url` | ROR | string |
+| `isni_id` | ROR | string |
+| `wikidata_id` | ROR | string |
+| `grid_id` | ROR | string |
+| `fundref_id` | ROR | string |
+| `ori_base_org` | Zenodo | bool |
+| `openalex_institution_id` | OpenAlex | string |
+| `openaire_org_id` | OpenAIRE | string |
+| `alei_id` | ALEI/KVK | string (empty) |
+| `pic_id` | EU PIC | string (empty) |
+| `is_barcelona_signatory` | Barcelona Decl. | bool |
+| `is_surf_member` | curated | bool |
+| `surf_member_type` | curated | string |
+| `is_ukb` | curated | bool |
+| `is_shb` | curated | bool |
+| `is_unl` | curated | bool |
+| `is_umcnl` | curated | bool |
+| `is_vh` | curated | bool |
+| `is_knaw_institute` | curated | bool |
+| `is_nwoi_institute` | curated | bool |
+| `is_openaire_member` | curated | bool |
+
+## Contributing
+
+Pull requests welcome. To add a new data source, implement the module contract in `src/`:
+
+```python
+def fetch(force_refresh: bool = False) -> dict:
+    return {"record_count": int, "fetched_at": str, "output_path": str}
+```
+
+See `agents.md` for the full module contract.
+
+## License
+
+MIT
