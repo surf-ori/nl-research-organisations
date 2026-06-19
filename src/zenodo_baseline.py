@@ -17,16 +17,12 @@ DATA_DIR = Path("data/raw/zenodo")
 ZENODO_URL = "https://zenodo.org/records/18957154/files/nl-orgs-baseline.xlsx?download=1"
 
 
-def _get_xlsx_path() -> Path:
+def XLSX_PATH():
     return DATA_DIR / "nl-orgs-baseline.xlsx"
 
 
-XLSX_PATH = _get_xlsx_path()
-
-
 def load_ror_ids() -> set[str]:
-    xlsx_path = DATA_DIR / "nl-orgs-baseline.xlsx"
-    wb = openpyxl.load_workbook(xlsx_path, read_only=True)
+    wb = openpyxl.load_workbook(XLSX_PATH(), read_only=True)
     ws = wb.active
     headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     ror_col = next((i for i, h in enumerate(headers) if h and str(h).strip().upper() == "ROR"), None)
@@ -46,7 +42,7 @@ def load_ror_ids() -> set[str]:
 def fetch(force_refresh: bool = False) -> dict:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     meta_path = DATA_DIR / "_metadata.json"
-    xlsx_path = DATA_DIR / "nl-orgs-baseline.xlsx"
+    xlsx_path = XLSX_PATH()
     if xlsx_path.exists() and not force_refresh and meta_path.exists():
         return json.loads(meta_path.read_text())
     resp = requests.get(ZENODO_URL, timeout=60)
