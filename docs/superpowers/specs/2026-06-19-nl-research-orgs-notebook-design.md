@@ -67,7 +67,7 @@ All notebooks use inline `uv` script metadata so `uvx marimo run notebook.py` wo
 #   "requests",
 #   "python-dotenv",
 #   "openpyxl",
-#   "anthropic",
+#   "openai",
 # ]
 # ///
 ```
@@ -158,10 +158,11 @@ Stages skip fetching if `data/raw/<source>/` is non-empty, unless `--force-refre
 
 ### On-demand — LLM Curator (`src/llm_curator.py`)
 
-- Not part of the sequential pipeline; triggered manually per membership source from Tab 3
+- Not part of the sequential pipeline; triggered manually per membership source from Tab 4
 - Accepts: base URL, API key, model name (from UI or `.env`)
 - Sends source URL + current curated CSV to LLM, asks for updated CSV
-- Uses Anthropic SDK by default; accepts any OpenAI-compatible endpoint
+- Uses the **`openai` Python SDK** with a configurable `base_url` — works with any OpenAI-compatible endpoint (SURF WillMa, Ollama, LMStudio, OpenRouter, Anthropic via their OpenAI-compat endpoint, etc.)
+- Model list is fetched from `<base_url>/models` and shown in a dropdown; falls back to a hardcoded list if the endpoint does not support `/models`
 - After LLM response, notebook shows a diff (old vs new rows) for user confirmation before saving
 
 ---
@@ -245,11 +246,12 @@ Five tabs via `mo.ui.tabs()`:
 
 ### Tab 3 — LLM Configuration
 
-- Base URL text input (pre-populated from `LLM_BASE_URL` in `.env`)
+- Base URL text input (pre-populated from `LLM_BASE_URL` in `.env`; example: `https://willma.surf.nl/api/v0`)
 - API key password input (pre-populated from `LLM_API_KEY` in `.env`)
-- Model dropdown (populated from provider `/models` endpoint after "Test connection"; falls back to hardcoded list)
-- `Test connection` button with inline success/error feedback
+- Model dropdown (populated by calling `GET <base_url>/models` after "Test connection"; falls back to a hardcoded list of known models if the endpoint does not expose `/models`)
+- `Test connection` button — fires a minimal chat completion call and shows success/error inline
 - Note: "Settings are session-only. To persist, add to your `.env` file."
+- Implementation uses the **`openai` Python SDK** (`openai.OpenAI(base_url=..., api_key=...)`) — compatible with any OpenAI-compatible endpoint including SURF WillMa, Ollama, LMStudio, OpenRouter, and Anthropic (`https://api.anthropic.com/v1`)
 
 ### Tab 4 — Membership Curation
 
@@ -289,10 +291,15 @@ OPENALEX_MAILTO=your@email.com
 # OpenAIRE
 OPENAIRE_REFRESH_TOKEN=your_token_here
 
-# LLM curator (Anthropic default; any OpenAI-compatible endpoint works)
-LLM_BASE_URL=https://api.anthropic.com
+# LLM curator — any OpenAI-compatible endpoint
+# Examples:
+#   SURF WillMa:  https://willma.surf.nl/api/v0   model: openai/gpt-oss-120b or RedHatAI/gemma-4-31B-it-NVFP4
+#   Anthropic:    https://api.anthropic.com/v1     model: claude-sonnet-4-6
+#   Ollama:       http://localhost:11434/v1         model: llama3
+#   OpenRouter:   https://openrouter.ai/api/v1     model: openai/gpt-4o
+LLM_BASE_URL=https://willma.surf.nl/api/v0
 LLM_API_KEY=your_key_here
-LLM_MODEL=claude-sonnet-4-6
+LLM_MODEL=openai/gpt-oss-120b
 
 # ALEI / KVK (placeholder — not yet implemented)
 KVK_API_KEY=
