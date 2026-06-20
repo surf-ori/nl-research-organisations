@@ -17,5 +17,7 @@ def test_get_token():
     mock_resp = MagicMock()
     mock_resp.json.return_value = {"access_token": "tok123"}
     with patch("src.openaire.requests.post", return_value=mock_resp):
-        from src.openaire import _get_token
-        assert _get_token("myrefresh") == "tok123"
+        with patch("src.openaire.CLIENT_ID", "myid"):
+            with patch("src.openaire.CLIENT_SECRET", "mysecret"):
+                from src.openaire import _get_token
+                assert _get_token() == "tok123"

@@ -4,7 +4,7 @@
 # ///
 import json
 import os
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,6 +22,8 @@ TOKEN_URL = "https://aai.openaire.eu/oidc/token"
 API_URL = "https://api.openaire.eu/graph/v1/organizations"
 CLIENT_ID = os.getenv("OPENAIRE_CLIENT_ID", "")
 CLIENT_SECRET = os.getenv("OPENAIRE_CLIENT_SECRET", "")
+# More workers are safe with auth; without auth the public API is more restrictive
+MAX_WORKERS = 20 if (CLIENT_ID and CLIENT_SECRET) else 5
 
 
 def _get_token() -> str:
@@ -54,12 +56,19 @@ def load_results() -> dict[str, str | None]:
     return out
 
 
+def _fetch_one(ror_url: str, headers: dict) -> str:
+    """Fetch and cache one ROR URL; returns the URL for progress tracking."""
+    resp = requests.get(API_URL, params={"pid": ror_url}, headers=headers, timeout=15)
+    resp.raise_for_status()
+    _cache_path(ror_url).write_text(resp.text)
+    return ror_url
+
+
 def fetch(ror_urls: list[str], force_refresh: bool = False) -> dict:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     uncached = [u for u in ror_urls if not _cache_path(u).exists() or force_refresh]
     if uncached:
         # Auth is optional — Graph API v1 is publicly accessible without a token.
-        # Use a Bearer token only if OPENAIRE_REFRESH_TOKEN is configured.
         headers = {}
         if CLIENT_ID and CLIENT_SECRET:
             try:
@@ -67,16 +76,10 @@ def fetch(ror_urls: list[str], force_refresh: bool = False) -> dict:
                 headers = {"Authorization": f"Bearer {token}"}
             except Exception as e:
                 print(f"OpenAIRE token fetch failed ({e}), continuing without auth")
-        for ror_url in uncached:
-            resp = requests.get(
-                API_URL,
-                params={"pid": ror_url},
-                headers=headers,
-                timeout=15,
-            )
-            resp.raise_for_status()
-            _cache_path(ror_url).write_text(resp.text)
-            time.sleep(0.15)
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            futures = {pool.submit(_fetch_one, u, headers): u for u in uncached}
+            for future in as_completed(futures):
+                future.result()  # re-raise any exception
     results = load_results()
     filled = sum(1 for v in results.values() if v)
     meta = {

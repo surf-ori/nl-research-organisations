@@ -4,7 +4,7 @@
 # ///
 import json
 import os
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +21,8 @@ DATA_DIR = Path("data/raw/openalex")
 API_URL = "https://api.openalex.org/institutions"
 API_KEY = os.getenv("OPENALEX_API_KEY", "")
 MAILTO = os.getenv("OPENALEX_MAILTO", "")
+# 10 workers without API key (~10 req/s), 20 with key (~100 req/s allowed)
+MAX_WORKERS = 20 if API_KEY else 10
 
 
 def _cache_path(ror_url: str) -> Path:
@@ -41,22 +43,24 @@ def load_results() -> dict[str, str | None]:
     return out
 
 
+def _fetch_one(ror_url: str) -> str:
+    """Fetch and cache one ROR URL; returns the URL for progress tracking."""
+    headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    params = {"filter": f"ror:{ror_url}", "mailto": MAILTO}
+    resp = requests.get(API_URL, params=params, headers=headers, timeout=15)
+    resp.raise_for_status()
+    _cache_path(ror_url).write_text(resp.text)
+    return ror_url
+
+
 def fetch(ror_urls: list[str], force_refresh: bool = False) -> dict:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    fetched = 0
-    for ror_url in ror_urls:
-        cache = _cache_path(ror_url)
-        if cache.exists() and not force_refresh:
-            continue
-        headers = {}
-        if API_KEY:
-            headers["Authorization"] = f"Bearer {API_KEY}"
-        params = {"filter": f"ror:{ror_url}", "mailto": MAILTO}
-        resp = requests.get(API_URL, params=params, headers=headers, timeout=15)
-        resp.raise_for_status()
-        cache.write_text(resp.text)
-        fetched += 1
-        time.sleep(0.15)
+    uncached = [u for u in ror_urls if not _cache_path(u).exists() or force_refresh]
+    if uncached:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            futures = {pool.submit(_fetch_one, u): u for u in uncached}
+            for future in as_completed(futures):
+                future.result()  # re-raise any exception
     results = load_results()
     filled = sum(1 for v in results.values() if v)
     meta = {
