@@ -20,19 +20,18 @@ app = mo.App(width="wide")
 DATA_DIR = Path("data/raw/openaire")
 TOKEN_URL = "https://aai.openaire.eu/oidc/token"
 API_URL = "https://api.openaire.eu/graph/v1/organizations"
-REFRESH_TOKEN = os.getenv("OPENAIRE_REFRESH_TOKEN", "")
 CLIENT_ID = os.getenv("OPENAIRE_CLIENT_ID", "")
 CLIENT_SECRET = os.getenv("OPENAIRE_CLIENT_SECRET", "")
 
 
-def _get_token(refresh_token: str) -> str:
-    # Token exchange requires client credentials registered at https://aai.openaire.eu
-    payload = {"grant_type": "refresh_token", "refresh_token": refresh_token, "scope": "openid"}
-    if CLIENT_ID:
-        payload["client_id"] = CLIENT_ID
-    if CLIENT_SECRET:
-        payload["client_secret"] = CLIENT_SECRET
-    resp = requests.post(TOKEN_URL, data=payload, timeout=15)
+def _get_token() -> str:
+    """Obtain a Bearer token via client_credentials grant with HTTP Basic auth."""
+    resp = requests.post(
+        TOKEN_URL,
+        data={"grant_type": "client_credentials", "scope": "openid"},
+        auth=(CLIENT_ID, CLIENT_SECRET),  # Client Secret Basic
+        timeout=15,
+    )
     resp.raise_for_status()
     return resp.json()["access_token"]
 
@@ -62,9 +61,9 @@ def fetch(ror_urls: list[str], force_refresh: bool = False) -> dict:
         # Auth is optional — Graph API v1 is publicly accessible without a token.
         # Use a Bearer token only if OPENAIRE_REFRESH_TOKEN is configured.
         headers = {}
-        if REFRESH_TOKEN:
+        if CLIENT_ID and CLIENT_SECRET:
             try:
-                token = _get_token(REFRESH_TOKEN)
+                token = _get_token()
                 headers = {"Authorization": f"Bearer {token}"}
             except Exception as e:
                 print(f"OpenAIRE token fetch failed ({e}), continuing without auth")
