@@ -4,6 +4,7 @@
 # ///
 import json
 import os
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,7 +50,12 @@ def _fetch_one(ror_url: str) -> str:
     params = {"filter": f"ror:{ror_url}", "mailto": MAILTO}
     resp = requests.get(API_URL, params=params, headers=headers, timeout=15)
     resp.raise_for_status()
-    _cache_path(ror_url).write_text(resp.text)
+    # Atomic write — avoids corruption if two processes/threads race on the same path
+    dest = _cache_path(ror_url)
+    with tempfile.NamedTemporaryFile("w", dir=dest.parent, delete=False, suffix=".tmp") as f:
+        f.write(resp.text)
+        tmp = f.name
+    os.replace(tmp, dest)
     return ror_url
 
 
