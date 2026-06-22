@@ -24,7 +24,7 @@ from pathlib import Path
 
 import marimo as mo
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 DATA_DIR = Path("data/raw/alei")
@@ -46,14 +46,16 @@ def fetch(force_refresh: bool = False) -> dict:
     return meta
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def status(mo):
+    # ALEI / KVK status — placeholder notice until API access is available
     mo.callout(
         mo.md("**ALEI / KVK ID fetcher — not yet implemented.** Awaiting API access. See `src/alei_fetcher.py` for implementation notes."),
         kind="warn",

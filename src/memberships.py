@@ -8,7 +8,7 @@ from pathlib import Path
 import duckdb
 import marimo as mo
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 CURATED_DIR = Path("data/curated")
@@ -91,14 +91,16 @@ def fetch(force_refresh: bool = False) -> dict:
     }
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def summary(mo):
+    # Memberships summary — count all entries across the 9 curated membership CSV files
     result = fetch()
     mo.md(f"## Memberships\nTotal membership entries: **{result['record_count']}**")
     return

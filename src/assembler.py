@@ -9,7 +9,7 @@ from pathlib import Path
 import marimo as mo
 import pandas as pd
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 RAW_DIR = Path("data/raw")
@@ -121,14 +121,16 @@ def fetch(force_refresh: bool = False) -> dict:
     return meta
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def summary(mo):
+    # Assembler summary — run the full assembly and report how many organisations were written
     result = fetch()
     mo.md(f"## Assembler\nAssembled **{result['record_count']}** organisations → `{result['output_path']}`")
     return

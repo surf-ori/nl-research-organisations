@@ -11,7 +11,7 @@ from pathlib import Path
 import marimo as mo
 import requests
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 DATA_DIR = Path("data/raw/barcelona")
@@ -71,14 +71,16 @@ def fetch(force_refresh: bool = False) -> dict:
     return meta
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def summary(mo):
+    # Barcelona Declaration summary — fetch (or read cache) and report signatory count
     result = fetch()
     mo.md(f"## Barcelona Declaration\n**{result['record_count']}** signatories · {result['fetched_at']}")
     return

@@ -10,7 +10,7 @@ from pathlib import Path
 import marimo as mo
 import requests
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 DATA_DIR = Path("data/raw/ror")
@@ -126,17 +126,19 @@ def fetch(force_refresh: bool = False) -> dict:
     return meta
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def preview(mo):
+    # ROR preview — fetch (or read from cache) and display a table of all NL-kingdom organisations
+    import pandas as pd
     result = fetch()
     orgs = load_orgs()
-    import pandas as pd
     df = pd.DataFrame(orgs)
     mo.vstack([
         mo.md(f"## ROR Fetch\nFetched **{result['record_count']}** records · last updated {result['fetched_at']}"),

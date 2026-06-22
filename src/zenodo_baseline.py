@@ -10,7 +10,7 @@ import marimo as mo
 import openpyxl
 import requests
 
-__generated_with = "0.13.0"
+__generated_with = "0.23.10"
 app = mo.App(width="wide")
 
 DATA_DIR = Path("data/raw/zenodo")
@@ -58,14 +58,16 @@ def fetch(force_refresh: bool = False) -> dict:
     return meta
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def setup():
+    # Imports — make marimo available for the interactive cell below
     import marimo as mo
     return (mo,)
 
 
-@app.cell
-def _(mo):
+@app.cell(hide_code=True)
+def summary(mo):
+    # Zenodo baseline summary — fetch (or read from cache) and report the number of ROR IDs
     result = fetch()
     mo.md(f"## Zenodo Baseline\n**{result['record_count']}** ROR ids in baseline · {result['fetched_at']}")
     return
