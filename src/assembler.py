@@ -31,6 +31,7 @@ with app.setup:
         "isni_id", "wikidata_id", "grid_id", "fundref_id",
         "ori_base_org", "openalex_institution_id", "openaire_org_id",
         "alei_id", "pic_id",
+        "nbn_prefix",
         "is_barcelona_signatory",
         "is_surf_member", "surf_member_type",
         "is_ukb", "is_shb", "is_unl", "is_umcnl", "is_vh",
@@ -55,6 +56,7 @@ def fetch(force_refresh: bool = False) -> dict:
     from src.pic_fetcher   import load_results as load_pic
     from src.barcelona     import load_results as load_barcelona
     from src.memberships   import load_memberships
+    from src.nbn_fetcher   import load_results as load_nbn
 
     orgs = load_orgs()
     if not orgs:
@@ -72,6 +74,7 @@ def fetch(force_refresh: bool = False) -> dict:
     pic          = load_pic()
     barcelona    = load_barcelona(orgs)
     memberships  = load_memberships(ror_urls)
+    nbn          = load_nbn()
 
     rows = []
     for org in orgs:
@@ -102,6 +105,7 @@ def fetch(force_refresh: bool = False) -> dict:
             "openaire_org_id":         openaire.get(url),
             "alei_id":                 alei.get(url) or "",
             "pic_id":                  pic.get(url) or "",
+            "nbn_prefix":              nbn.get(url, ""),
             "is_barcelona_signatory":  barcelona.get(url, False),
             "is_surf_member":          m.get("is_surf_member", False),
             "surf_member_type":        m.get("surf_member_type"),

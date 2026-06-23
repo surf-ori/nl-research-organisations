@@ -40,6 +40,7 @@ def shared_state(Path, json):
         "pic":         {"label": "EU PIC",          "source_url": "https://ec.europa.eu/info/funding-tenders/",     "placeholder": True},
         "barcelona":   {"label": "Barcelona Decl.", "source_url": "https://barcelona-declaration.org",              "placeholder": False},
         "memberships": {"label": "Memberships",     "source_url": "data/curated/",                                  "placeholder": False},
+        "nbn":         {"label": "NBN Prefixes",    "source_url": "https://www.kb.nl/.../nbn-catalogus",            "placeholder": False},
         "assembler":   {"label": "Assembly",        "source_url": "data/nl_research_orgs.parquet",                  "placeholder": False},
     }
 
@@ -98,12 +99,14 @@ def llm_config(mo, os):
 
 @app.cell(hide_code=True)
 def llm_test_result(mo, llm_base_url, llm_api_key, llm_model, test_btn):
-    # LLM connection test — fires when the Test button is clicked; fetches available models on success
+    # LLM connection test — shows a spinner while the request is in flight, result appears after
     if test_btn.value:
         from src.llm_curator import test_connection, fetch_models
-        ok, msg = test_connection(llm_base_url.value, llm_api_key.value, llm_model.value)
+        with mo.status.spinner(title="Testing connection…", remove_on_exit=False):
+            ok, msg = test_connection(llm_base_url.value, llm_api_key.value, llm_model.value)
         conn_status = mo.callout(mo.md(f"{'✓' if ok else '✗'} {msg}"), kind="success" if ok else "danger")
-        model_ids = fetch_models(llm_base_url.value, llm_api_key.value)
+        with mo.status.spinner(title="Fetching available models…", remove_on_exit=False):
+            model_ids = fetch_models(llm_base_url.value, llm_api_key.value)
     else:
         conn_status = mo.md("")
         model_ids = None
@@ -178,14 +181,17 @@ def dashboard(mo, pd, datetime, timezone, OUT_PARQUET, STAGE_META, read_meta):
 
 @app.cell(hide_code=True)
 def full_refresh(mo, full_refresh_btn):
-    # Full pipeline refresh — runs all stages in dependency order when the button is clicked
+    # Full pipeline refresh — runs all stages in dependency order; shows progress bar while running
     if full_refresh_btn.value:
         import importlib
         log_lines = []
-        for _mod in [
+        _stages = [
             "src.ror_fetcher", "src.zenodo_baseline", "src.openalex", "src.openaire",
-            "src.alei_fetcher", "src.pic_fetcher", "src.barcelona", "src.memberships", "src.assembler",
-        ]:
+            "src.alei_fetcher", "src.pic_fetcher", "src.barcelona", "src.memberships", "src.nbn_fetcher", "src.assembler",
+        ]
+        for _mod in mo.status.progress_bar(
+            _stages, title="Full Refresh", subtitle="Running all pipeline stages…", remove_on_exit=False,
+        ):
             try:
                 m = importlib.import_module(_mod)
                 # openalex and openaire need the ROR URL list as input
@@ -212,17 +218,24 @@ def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refr
     # Pipeline stages — accordion with one collapsible section per data source
     import importlib as _il
 
-    def _refresh_fn(stage):
+    _STAGE_MODULES = {
+        "ror": "src.ror_fetcher", "zenodo": "src.zenodo_baseline",
+        "alei": "src.alei_fetcher", "pic": "src.pic_fetcher",
+        "nbn": "src.nbn_fetcher",
+    }
+
+    def _refresh_fn(stage, label):
         # Build an on_click handler that fetches the given stage and stores the result in state
         def _handler(_):
             try:
-                m = _il.import_module(f"src.{stage}")
-                if stage in ("openalex", "openaire"):
-                    rf = _il.import_module("src.ror_fetcher")
-                    ror_urls = [o["ror_id_url"] for o in rf.load_orgs()]
-                    result = m.fetch(ror_urls, force_refresh=True)
-                else:
-                    result = m.fetch(force_refresh=True)
+                with mo.status.spinner(title=f"Refreshing {label}…", remove_on_exit=False):
+                    m = _il.import_module(_STAGE_MODULES.get(stage, f"src.{stage}"))
+                    if stage in ("openalex", "openaire"):
+                        rf = _il.import_module("src.ror_fetcher")
+                        ror_urls = [o["ror_id_url"] for o in rf.load_orgs()]
+                        result = m.fetch(ror_urls, force_refresh=True)
+                    else:
+                        result = m.fetch(force_refresh=True)
                 set_refresh_results(lambda d, r=result, s=stage: {**d, s: r})
             except Exception as e:
                 set_refresh_results(lambda d, s=stage, err=str(e): {**d, s: {"error": err}})
@@ -250,7 +263,7 @@ def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refr
             else:
                 status_md = mo.callout(mo.md(f"✓ {last.get('record_count', '?')} records fetched"), kind="success")
 
-        btn = mo.ui.button(label=f"Refresh {info['label']}", on_click=_refresh_fn(stage))
+        btn = mo.ui.button(label=f"Refresh {info['label']}", on_click=_refresh_fn(stage, info["label"]))
 
         # ROR only: show the first 10 cached rows as a preview without hitting the network
         preview = mo.md("")
@@ -336,7 +349,8 @@ def membership_curation(
 
         def _save_handler(_, _editor=editor, _path=path, _csv=csv_file):
             # Write the edited dataframe back to the curated CSV file on disk
-            _editor.value.to_csv(_path, index=False)
+            with mo.status.spinner(title="Saving…", remove_on_exit=False):
+                _editor.value.to_csv(_path, index=False)
             set_save_status(lambda d, f=_csv: {**d, f: "saved"})
 
         def _llm_handler(_, _editor=editor, _path=path, _csv=csv_file, _url=source_url):
@@ -346,7 +360,8 @@ def membership_curation(
                 import csv as _csv_mod
                 from src.llm_curator import curate_csv as _curate_csv
                 current = _path.read_text() if _path.exists() else ""
-                updated = _curate_csv(_url, current, llm_base_url.value, llm_api_key.value, llm_model_live.value)
+                with mo.status.spinner(title="Asking LLM to update membership list…", remove_on_exit=False):
+                    updated = _curate_csv(_url, current, llm_base_url.value, llm_api_key.value, llm_model_live.value)
                 # Validate the LLM output has the required columns before writing to disk
                 reader = _csv_mod.DictReader(_io.StringIO(updated))
                 fieldnames = reader.fieldnames or []

@@ -12,10 +12,14 @@ app = marimo.App(width="wide")
 with app.setup:
     # Setup — imports and membership source table definitions
     import marimo as mo
+    import json
     from datetime import datetime, timezone
     from pathlib import Path
 
     import duckdb
+
+    # Metadata directory for the dashboard's read_meta() function
+    MEMBERSHIPS_META_DIR = Path("data/raw/memberships")
 
     # Directory where the curated membership CSV files live
     CURATED_DIR = Path("data/curated")
@@ -95,11 +99,14 @@ def fetch(force_refresh: bool = False) -> dict:
         if path.exists():
             n = conn.execute(f"SELECT count(*) FROM read_csv_auto('{path}')").fetchone()[0]
             total += n
-    return {
+    meta = {
         "fetched_at":   datetime.now(timezone.utc).isoformat(),
         "record_count": total,
         "source_url":   str(CURATED_DIR),
     }
+    MEMBERSHIPS_META_DIR.mkdir(parents=True, exist_ok=True)
+    (MEMBERSHIPS_META_DIR / "_metadata.json").write_text(json.dumps(meta))
+    return meta
 
 
 @app.cell(hide_code=True)
