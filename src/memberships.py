@@ -2,51 +2,58 @@
 # requires-python = ">=3.11"
 # dependencies = ["marimo", "duckdb", "python-dotenv"]
 # ///
-from datetime import datetime, timezone
-from pathlib import Path
 
-import duckdb
-import marimo as mo
+import marimo
 
 __generated_with = "0.23.10"
-app = mo.App(width="wide")
-
-CURATED_DIR = Path("data/curated")
-
-# Each entry: (csv_file, bool_flag_key, result_type_key, csv_type_column)
-# result_type_key and csv_type_column are None when there is no type column.
-SOURCES = [
-    ("surf_members.csv", "is_surf_member", "surf_member_type", "member_type"),
-    ("ukb_members.csv", "is_ukb", None, None),
-    ("shb_members.csv", "is_shb", None, None),
-    ("unl_members.csv", "is_unl", None, None),
-    ("umcnl_members.csv", "is_umcnl", None, None),
-    ("vh_members.csv", "is_vh", None, None),
-    ("knaw_institutes.csv", "is_knaw_institute", None, None),
-    ("nwoi_institutes.csv", "is_nwoi_institute", None, None),
-    ("openaire_members.csv", "is_openaire_member", None, None),
-]
+app = marimo.App(width="wide")
 
 
+with app.setup:
+    # Setup — imports and membership source table definitions
+    import marimo as mo
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    import duckdb
+
+    # Directory where the curated membership CSV files live
+    CURATED_DIR = Path("data/curated")
+
+    # Each tuple: (csv_filename, output_bool_key, output_type_key, csv_type_column)
+    # output_type_key and csv_type_column are None when the CSV has no type column.
+    SOURCES = [
+        ("surf_members.csv",      "is_surf_member",      "surf_member_type", "member_type"),
+        ("ukb_members.csv",       "is_ukb",               None,              None),
+        ("shb_members.csv",       "is_shb",               None,              None),
+        ("unl_members.csv",       "is_unl",               None,              None),
+        ("umcnl_members.csv",     "is_umcnl",             None,              None),
+        ("vh_members.csv",        "is_vh",                None,              None),
+        ("knaw_institutes.csv",   "is_knaw_institute",    None,              None),
+        ("nwoi_institutes.csv",   "is_nwoi_institute",    None,              None),
+        ("openaire_members.csv",  "is_openaire_member",   None,              None),
+    ]
+
+
+@app.function
 def load_memberships(ror_urls: list[str]) -> dict[str, dict]:
-    """Returns dict mapping ror_id_url -> membership flags dict.
+    """Return a mapping of ror_id_url → membership flags dict for every given ROR URL.
 
-    Keys: is_surf_member (bool), surf_member_type (str|None),
-          is_ukb (bool), is_shb (bool), is_unl (bool), is_umcnl (bool),
-          is_vh (bool), is_knaw_institute (bool), is_nwoi_institute (bool),
-          is_openaire_member (bool).
-    All ror_urls appear as keys in the output (with False/None defaults).
+    All nine membership sources are queried via DuckDB. Every URL in ror_urls appears
+    as a key, with False/None defaults for all flags even when not found in any CSV.
+    Keys: is_surf_member, surf_member_type, is_ukb, is_shb, is_unl, is_umcnl,
+          is_vh, is_knaw_institute, is_nwoi_institute, is_openaire_member.
     """
     conn = duckdb.connect()
-    result = {
+    result: dict[str, dict] = {
         url: {
-            "is_surf_member": False,
-            "surf_member_type": None,
-            "is_ukb": False,
-            "is_shb": False,
-            "is_unl": False,
-            "is_umcnl": False,
-            "is_vh": False,
+            "is_surf_member":    False,
+            "surf_member_type":  None,
+            "is_ukb":            False,
+            "is_shb":            False,
+            "is_unl":            False,
+            "is_umcnl":          False,
+            "is_vh":             False,
             "is_knaw_institute": False,
             "is_nwoi_institute": False,
             "is_openaire_member": False,
@@ -58,11 +65,11 @@ def load_memberships(ror_urls: list[str]) -> dict[str, dict]:
         path = CURATED_DIR / csv_file
         if not path.exists():
             continue
-        rel = conn.execute(f"SELECT * FROM read_csv_auto('{path}')")
-        columns = [desc[0] for desc in rel.description]
+        rel  = conn.execute(f"SELECT * FROM read_csv_auto('{path}')")
+        cols = [desc[0] for desc in rel.description]
         rows = rel.fetchall()
-        ror_idx = columns.index("ror_id_url") if "ror_id_url" in columns else None
-        type_idx = columns.index(csv_type_col) if csv_type_col and csv_type_col in columns else None
+        ror_idx  = cols.index("ror_id_url") if "ror_id_url" in cols else None
+        type_idx = cols.index(csv_type_col) if csv_type_col and csv_type_col in cols else None
         if ror_idx is None:
             continue
         for row in rows:
@@ -75,34 +82,69 @@ def load_memberships(ror_urls: list[str]) -> dict[str, dict]:
     return result
 
 
+@app.function
 def fetch(force_refresh: bool = False) -> dict:
-    """Returns {"record_count": int, "fetched_at": str, "source_url": str}."""
+    """Count rows across all curated membership CSVs.
+
+    Returns {"record_count": int, "fetched_at": str, "source_url": str}.
+    """
     conn = duckdb.connect()
-    counts = {}
-    for csv_file, bool_col, _, __ in SOURCES:
+    total = 0
+    for csv_file, _, __, ___ in SOURCES:
         path = CURATED_DIR / csv_file
         if path.exists():
             n = conn.execute(f"SELECT count(*) FROM read_csv_auto('{path}')").fetchone()[0]
-            counts[bool_col] = n
+            total += n
     return {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "record_count": sum(counts.values()),
-        "source_url": str(CURATED_DIR),
+        "fetched_at":   datetime.now(timezone.utc).isoformat(),
+        "record_count": total,
+        "source_url":   str(CURATED_DIR),
     }
 
 
 @app.cell(hide_code=True)
-def setup():
-    # Imports — make marimo available for the interactive cell below
-    import marimo as mo
-    return (mo,)
+def header():
+    # Header — memberships module description and list of curated sources
+    mo.md("""
+    ## Memberships — Curated Membership Lists
+
+    Joins curated CSV files (one per membership type) against the ROR universe to
+    set boolean and type flags on each organisation. All CSVs must have a
+    `ror_id_url` column; `surf_members.csv` additionally has a `member_type` column.
+
+    Sources in `data/curated/`:
+    | CSV | Flag |
+    |-----|------|
+    | surf_members.csv | is_surf_member |
+    | ukb_members.csv | is_ukb |
+    | shb_members.csv | is_shb |
+    | unl_members.csv | is_unl |
+    | umcnl_members.csv | is_umcnl |
+    | vh_members.csv | is_vh |
+    | knaw_institutes.csv | is_knaw_institute |
+    | nwoi_institutes.csv | is_nwoi_institute |
+    | openaire_members.csv | is_openaire_member |
+    """)
+    return
 
 
 @app.cell(hide_code=True)
-def summary(mo):
-    # Memberships summary — count all entries across the 9 curated membership CSV files
-    result = fetch()
-    mo.md(f"## Memberships\nTotal membership entries: **{result['record_count']}**")
+def summary():
+    # Summary — total membership entries across all curated CSVs
+    conn = duckdb.connect()
+    rows = []
+    for csv_file, bool_col, _, __ in SOURCES:
+        path = CURATED_DIR / csv_file
+        if path.exists():
+            n = conn.execute(f"SELECT count(*) FROM read_csv_auto('{path}')").fetchone()[0]
+            rows.append({"source": csv_file, "flag": bool_col, "count": n})
+        else:
+            rows.append({"source": csv_file, "flag": bool_col, "count": "—"})
+    import pandas as pd
+    mo.vstack([
+        mo.md(f"**{sum(r['count'] for r in rows if isinstance(r['count'], int))} total** membership entries"),
+        mo.ui.table(pd.DataFrame(rows)),
+    ])
     return
 
 

@@ -18,46 +18,71 @@ When API access is available:
 
 Required .env key: KVK_API_KEY
 """
-import json
-from datetime import datetime, timezone
-from pathlib import Path
 
-import marimo as mo
+import marimo
 
 __generated_with = "0.23.10"
-app = mo.App(width="wide")
-
-DATA_DIR = Path("data/raw/alei")
-NOT_IMPLEMENTED = True
+app = marimo.App(width="wide")
 
 
+with app.setup:
+    # Setup — imports and placeholder constants
+    import marimo as mo
+    import json
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    # Cache directory; NOT_IMPLEMENTED blocks the real fetch until the API is wired up
+    DATA_DIR        = Path("data/raw/alei")
+    NOT_IMPLEMENTED = True
+
+
+@app.function
 def load_results() -> dict[str, str | None]:
+    """Return an empty mapping — ALEI API not yet implemented."""
     return {}
 
 
+@app.function
 def fetch(force_refresh: bool = False) -> dict:
+    """Write a placeholder metadata file and return zero-count metadata.
+
+    Replace this body with real API calls once KVK_API_KEY is available.
+    """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     meta = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at":   datetime.now(timezone.utc).isoformat(),
         "record_count": 0,
-        "source_url": "https://developers.kvk.nl/documentation",
+        "source_url":   "https://developers.kvk.nl/documentation",
     }
     (DATA_DIR / "_metadata.json").write_text(json.dumps(meta))
     return meta
 
 
 @app.cell(hide_code=True)
-def setup():
-    # Imports — make marimo available for the interactive cell below
-    import marimo as mo
-    return (mo,)
+def header():
+    # Header — ALEI fetcher description and implementation roadmap
+    mo.md("""
+    ## ALEI / KVK — Authoritative Legal Entity Identifier
+
+    Intended to fetch the **Authoritative Legal Entity Identifier (ALEI)** /
+    KVK number for each Dutch research organisation via the
+    [KVK Open Data API](https://developers.kvk.nl/documentation).
+
+    **Status: not yet implemented.** See the module docstring for the
+    implementation roadmap. Set `KVK_API_KEY` in `.env` to enable.
+    """)
+    return
 
 
 @app.cell(hide_code=True)
-def status(mo):
-    # ALEI / KVK status — placeholder notice until API access is available
+def status():
+    # Status — placeholder callout until the KVK API integration is complete
     mo.callout(
-        mo.md("**ALEI / KVK ID fetcher — not yet implemented.** Awaiting API access. See `src/alei_fetcher.py` for implementation notes."),
+        mo.md(
+            "**ALEI / KVK ID fetcher — not yet implemented.** "
+            "Awaiting API access. See `src/alei_fetcher.py` for implementation notes."
+        ),
         kind="warn",
     )
     return

@@ -18,46 +18,71 @@ When API access is available:
 
 Required .env key: EU_PIC_API_KEY
 """
-import json
-from datetime import datetime, timezone
-from pathlib import Path
 
-import marimo as mo
+import marimo
 
 __generated_with = "0.23.10"
-app = mo.App(width="wide")
-
-DATA_DIR = Path("data/raw/pic")
-NOT_IMPLEMENTED = True
+app = marimo.App(width="wide")
 
 
+with app.setup:
+    # Setup — imports and placeholder constants
+    import marimo as mo
+    import json
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    # Cache directory; NOT_IMPLEMENTED blocks the real fetch until the API is wired up
+    DATA_DIR        = Path("data/raw/pic")
+    NOT_IMPLEMENTED = True
+
+
+@app.function
 def load_results() -> dict[str, str | None]:
+    """Return an empty mapping — EU PIC API not yet implemented."""
     return {}
 
 
+@app.function
 def fetch(force_refresh: bool = False) -> dict:
+    """Write a placeholder metadata file and return zero-count metadata.
+
+    Replace this body with real API calls once EU_PIC_API_KEY is available.
+    """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     meta = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at":   datetime.now(timezone.utc).isoformat(),
         "record_count": 0,
-        "source_url": "https://ec.europa.eu/info/funding-tenders/opportunities/portal/",
+        "source_url":   "https://ec.europa.eu/info/funding-tenders/opportunities/portal/",
     }
     (DATA_DIR / "_metadata.json").write_text(json.dumps(meta))
     return meta
 
 
 @app.cell(hide_code=True)
-def setup():
-    # Imports — make marimo available for the interactive cell below
-    import marimo as mo
-    return (mo,)
+def header():
+    # Header — EU PIC fetcher description and implementation roadmap
+    mo.md("""
+    ## EU PIC — Participant Identification Code
+
+    Intended to fetch the **EU Participant Identification Code (PIC)** for each
+    Dutch research organisation via the
+    [EU Funding & Tenders portal API](https://webgate.ec.europa.eu/funding-tenders-opportunities/display/OM/Webservices).
+
+    **Status: not yet implemented.** See the module docstring for the
+    implementation roadmap. Set `EU_PIC_API_KEY` in `.env` to enable.
+    """)
+    return
 
 
 @app.cell(hide_code=True)
-def status(mo):
-    # EU PIC status — placeholder notice until API access is available
+def status():
+    # Status — placeholder callout until the EU PIC API integration is complete
     mo.callout(
-        mo.md("**PIC ID fetcher — not yet implemented.** Awaiting API access. See `src/pic_fetcher.py` for implementation notes."),
+        mo.md(
+            "**PIC ID fetcher — not yet implemented.** "
+            "Awaiting API access. See `src/pic_fetcher.py` for implementation notes."
+        ),
         kind="warn",
     )
     return
