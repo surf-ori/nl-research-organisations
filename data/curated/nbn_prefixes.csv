@@ -1,45 +1,63 @@
 ror_id_url,name,nbn_prefix
-https://ror.org/04pp8hn57,Utrecht University,urn:nbn:nl:ui:10-
-https://ror.org/012p63287,University of Groningen,urn:nbn:nl:ui:11-
-https://ror.org/04b8v1s79,Tilburg University,urn:nbn:nl:ui:12-
+https://ror.org/04pp8hn57,Universiteit Utrecht,urn:nbn:nl:ui:10-
+https://ror.org/012p63287,Rijksuniversiteit Groningen,urn:nbn:nl:ui:11-
+https://ror.org/04b8v1s79,Universiteit van Tilburg,urn:nbn:nl:ui:12-
 https://ror.org/008pnp284,Data Archiving and Networked Services (DANS),urn:nbn:nl:ui:13-
-,Amsterdam University Press,urn:nbn:nl:ui:14-
-https://ror.org/057w15z03,Erasmus University Rotterdam,urn:nbn:nl:ui:15-
-,International Institute for the Study of Islam in the Modern World,urn:nbn:nl:ui:16-
-https://ror.org/043c0p156,Royal Netherlands Academy of Arts and Sciences,urn:nbn:nl:ui:17-
-https://ror.org/04jsz6e67,Dutch Research Council,urn:nbn:nl:ui:18-
-https://ror.org/0566bfb96,Naturalis Biodiversity Center,urn:nbn:nl:ui:19-
-https://ror.org/018dfmf50,Open University of the Netherlands,urn:nbn:nl:ui:21-
-https://ror.org/016xsfp80,Radboud University Nijmegen,urn:nbn:nl:ui:22-
-https://ror.org/01cesdt21,National Institute for Public Health and the Environment,urn:nbn:nl:ui:23-
-https://ror.org/02e2c7k09,Delft University of Technology,urn:nbn:nl:ui:24-
-https://ror.org/02c2kyt77,Eindhoven University of Technology,urn:nbn:nl:ui:25-
-https://ror.org/027bh9e22,Leiden University,urn:nbn:nl:ui:26-
-https://ror.org/02jz4aj89,Maastricht University,urn:nbn:nl:ui:27-
-https://ror.org/006hf6230,University of Twente,urn:nbn:nl:ui:28-
-https://ror.org/04dkp9463,University of Amsterdam,urn:nbn:nl:ui:29-
+https://ror.org/03dpjfc73,Amsterdam University College,urn:nbn:nl:ui:14-
+https://ror.org/057w15z03,Erasmus Universiteit Rotterdam,urn:nbn:nl:ui:15-
+,International Institute for the study of Islam in the Modern World,urn:nbn:nl:ui:16-
+https://ror.org/043c0p156,KNAW,urn:nbn:nl:ui:17-
+https://ror.org/04jsz6e67,NWO / CWI,urn:nbn:nl:ui:18-
+,Naturalis,urn:nbn:nl:ui:19-
+,Nederlandse Onderzoek Databank,urn:nbn:nl:ui:20-
+https://ror.org/018dfmf50,Open Universiteit Nederland,urn:nbn:nl:ui:21-
+https://ror.org/016xsfp80,Radboud Universiteit Nijmegen,urn:nbn:nl:ui:22-
+https://ror.org/01cesdt21,Rijksinstituut voor Volksgezondheid en Mileu,urn:nbn:nl:ui:23-
+https://ror.org/02e2c7k09,Technische Universiteit Delft,urn:nbn:nl:ui:24-
+https://ror.org/02c2kyt77,Technische Universiteit Eindhoven,urn:nbn:nl:ui:25-
+https://ror.org/027bh9e22,Universiteit Leiden,urn:nbn:nl:ui:26-
+https://ror.org/02jz4aj89,Universiteit Maastricht,urn:nbn:nl:ui:27-
+https://ror.org/006hf6230,Universiteit Twente,urn:nbn:nl:ui:28-
+https://ror.org/04dkp9463,Universiteit van Amsterdam,urn:nbn:nl:ui:29-
 https://ror.org/008xxew50,Vrije Universiteit Amsterdam,urn:nbn:nl:ui:31-
-https://ror.org/04qw24q55,Wageningen University & Research,urn:nbn:nl:ui:32-
-https://ror.org/02dnvjf04,Netherlands Defence Academy,urn:nbn:nl:ui:33-
-https://ror.org/01z6bgg93,Royal Tropical Institute,urn:nbn:nl:ui:34-
-https://ror.org/04w5ec154,University of Humanistic Studies,urn:nbn:nl:ui:38-
-https://ror.org/03w5dn804,Dutch Institute for Fundamental Energy Research,urn:nbn:nl:ui:39-
+https://ror.org/04qw24q55,Wageningen Universiteit & Research Centrum,urn:nbn:nl:ui:32-
+,Nederlandse Defensie Akademie,urn:nbn:nl:ui:33-
+,Koninklijk Instituut voor de Tropen,urn:nbn:nl:ui:34-
+,Nijenrode,urn:nbn:nl:ui:37-
+,Universiteit voor Humanistiek,urn:nbn:nl:ui:38-
+https://ror.org/03w5dn804,Dutch Institute for Fundamental Energy Research (DIFFER),urn:nbn:nl:ui:39-
 https://ror.org/016w23120,Protestant Theological University,urn:nbn:nl:ui:40-
-https://ror.org/00y2z2s03,Amsterdam University of Applied Sciences,urn:nbn:nl:hs:10-
-https://ror.org/015d5s513,Avans University of Applied Sciences,urn:nbn:nl:hs:11-
+https://ror.org/00y2z2s03,Hogeschool van Amsterdam,urn:nbn:nl:hs:10-
+https://ror.org/015d5s513,Avans Hogeschool,urn:nbn:nl:hs:11-
+,Christelijke Hogeschool Ede,urn:nbn:nl:hs:12-
+,Driestar Educatief,urn:nbn:nl:hs:13-
+,Juridische Hogeschool,urn:nbn:nl:hs:14-
+,Gereformeerde Hogeschool,urn:nbn:nl:hs:15-
 https://ror.org/047cqa323,HZ University of Applied Sciences,urn:nbn:nl:hs:16-
-https://ror.org/021zvq422,The Hague University of Applied Sciences,urn:nbn:nl:hs:17-
-https://ror.org/00xqtxw43,Hanze University of Applied Sciences,urn:nbn:nl:hs:18-
-https://ror.org/03cfsyg37,Inholland University of Applied Sciences,urn:nbn:nl:hs:20-
-https://ror.org/0481e1q24,Rotterdam University of Applied Sciences,urn:nbn:nl:hs:22-
-https://ror.org/028z9kw20,University of Applied Sciences Utrecht,urn:nbn:nl:hs:23-
-https://ror.org/0500gea42,HAN University of Applied Sciences,urn:nbn:nl:hs:25-
-https://ror.org/01jwcme05,Fontys University of Applied Sciences,urn:nbn:nl:hs:27-
-https://ror.org/02xgxme97,NHL Stenden University of Applied Sciences,urn:nbn:nl:hs:28-
+https://ror.org/021zvq422,Haagse Hogeschool,urn:nbn:nl:hs:17-
+https://ror.org/00xqtxw43,Hanzehogeschool Groningen,urn:nbn:nl:hs:18-
+,Hogeschool Edith Stein,urn:nbn:nl:hs:19-
+https://ror.org/03cfsyg37,Hogeschool Inholland,urn:nbn:nl:hs:20-
+,Hogeschool Leiden,urn:nbn:nl:hs:21-
+https://ror.org/0481e1q24,Hogeschool Rotterdam,urn:nbn:nl:hs:22-
+https://ror.org/028z9kw20,Hogeschool Utrecht,urn:nbn:nl:hs:23-
+,Hogeschool Van Hall Larenstein,urn:nbn:nl:hs:24-
+https://ror.org/0500gea42,Hogeschool van Arnhem en Nijmegen,urn:nbn:nl:hs:25-
+https://ror.org/047kqmy39,Iselinge Hogeschool,urn:nbn:nl:hs:26-
+https://ror.org/01jwcme05,Fontys Hogescholen,urn:nbn:nl:hs:27-
+https://ror.org/02xgxme97,NHL Stenden Hogeschool,urn:nbn:nl:hs:28-
 https://ror.org/005t9n460,Saxion,urn:nbn:nl:hs:29-
-https://ror.org/04zmc0e16,Windesheim University of Applied Sciences,urn:nbn:nl:hs:31-
-https://ror.org/02m6k0m40,Zuyd University of Applied Sciences,urn:nbn:nl:hs:32-
+https://ror.org/04zmc0e16,Windesheim,urn:nbn:nl:hs:31-
+https://ror.org/02m6k0m40,Zuyd Hogeschool,urn:nbn:nl:hs:32-
+https://ror.org/05nrjb178,Katholieke Pabo Zwolle,urn:nbn:nl:hs:33-
+,Nederlandse Defensie Academie,urn:nbn:nl:hs:34-
 https://ror.org/04mfj5474,Breda University of Applied Sciences,urn:nbn:nl:hs:35-
-https://ror.org/03jnx2c74,Aeres University of Applied Sciences,urn:nbn:nl:hs:40-
-https://ror.org/022sw4578,Netherlands Aerospace Centre,urn:nbn:nl:in:30-
-https://ror.org/01bnjb948,Netherlands Organisation for Applied Scientific Research,urn:nbn:nl:in:40-
+,Amsterdamse hogeschool van de kunsten,urn:nbn:nl:hs:36-
+https://ror.org/04vtvrr13,Codarts Rotterdam,urn:nbn:nl:hs:37-
+https://ror.org/018t8yw14,Hotelschool The Hague,urn:nbn:nl:hs:38-
+https://ror.org/05p706d77,HAS green academy,urn:nbn:nl:hs:39-
+https://ror.org/03jnx2c74,AERES Hogeschool,urn:nbn:nl:hs:40-
+https://ror.org/05az93f25,ArtEZ University of the Arts,urn:nbn:nl:hs:41-
+,Beeld & Geluid,urn:nbn:nl:in:10-
+,Beeld & Geluid collectie,urn:nbn:nl:in:20-
+,Koninklijk Nederlands Lucht- en Ruimtevaartcentrum – NLR,urn:nbn:nl:in:30-

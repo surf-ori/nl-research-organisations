@@ -28,6 +28,7 @@ with app.setup:
     ROR_API_BASE = "https://api.ror.org/v2/organizations"
     DATA_DIR     = Path("data/curated")
     OUT_CSV      = DATA_DIR / "nbn_prefixes.csv"
+    NBN_META_DIR = Path("data/raw/nbn")
 
     _KNOWN_IDS = {
         # Hard-coded for common institutions where the ROR API search is unreliable
@@ -78,7 +79,7 @@ with app.setup:
         text = re.sub(r"<[^>]+>", " ", article.group(1)) if article else html
         text = re.sub(r"&amp;", "&", text)
         text = re.sub(r"&nbsp;", " ", text)
-        pattern = re.compile(r"\b(UI|HS|IN):(\d+)-\s+([^\n]+?)(?=\s+(?:UI|HS|IN):\d+|\s*$)", re.DOTALL)
+        pattern = re.compile(r"\b(UI|HS|IN):(\d+)-?\s+([^\n]+?)(?=\s+(?:UI|HS|IN):\d+|\s*$)", re.DOTALL)
         entries = []
         for series, num, name in pattern.findall(text):
             clean_name = re.sub(r"\s+", " ", name).strip()
@@ -140,19 +141,17 @@ def fetch(force_refresh: bool = False) -> dict:
     Returns {"record_count": int, "fetched_at": str, "source_url": str}.
     """
     from datetime import datetime, timezone
+    import json
 
-    if OUT_CSV.exists() and not force_refresh:
-        with OUT_CSV.open() as f:
-            n = sum(1 for _ in f) - 1
-        return {
-            "fetched_at":   "cached",
-            "record_count": n,
-            "source_url":   KB_CATALOG_URL,
-        }
+    meta_path = NBN_META_DIR / "_metadata.json"
+    if OUT_CSV.exists() and not force_refresh and meta_path.exists():
+        return json.loads(meta_path.read_text())
 
     resp = requests.get(KB_CATALOG_URL, timeout=30)
     resp.raise_for_status()
     entries = _parse_catalog(resp.text)
+    if not entries:
+        raise ValueError("NBN catalog parsing returned 0 entries — page format may have changed")
 
     rows = []
     for entry in entries:
@@ -177,6 +176,8 @@ def fetch(force_refresh: bool = False) -> dict:
         "record_count": len(rows),
         "source_url":   KB_CATALOG_URL,
     }
+    NBN_META_DIR.mkdir(parents=True, exist_ok=True)
+    meta_path.write_text(json.dumps(meta))
     return meta
 
 
