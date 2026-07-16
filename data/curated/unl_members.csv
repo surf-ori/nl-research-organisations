@@ -1,15 +1,19 @@
-ror_id_url,name
-https://ror.org/04dkp9463,University of Amsterdam
-https://ror.org/008xxew50,Vrije Universiteit Amsterdam
-https://ror.org/02e2c7k09,Delft University of Technology
-https://ror.org/02c2kyt77,Eindhoven University of Technology
-https://ror.org/012p63287,University of Groningen
-https://ror.org/02jz4aj89,Maastricht University
-https://ror.org/016xsfp80,Radboud University Nijmegen
-https://ror.org/04b8v1s79,Tilburg University
-https://ror.org/006hf6230,University of Twente
-https://ror.org/04pp8hn57,Utrecht University
-https://ror.org/04qw24q55,Wageningen University & Research
-https://ror.org/057w15z03,Erasmus University Rotterdam
-https://ror.org/027bh9e22,Leiden University
-https://ror.org/018dfmf50,Open University of the Netherlands
+ror_id_url,name,member_type
+https://ror.org/04dkp9463,University of Amsterdam,regular
+https://ror.org/008xxew50,Vrije Universiteit Amsterdam,regular
+https://ror.org/02e2c7k09,Delft University of Technology,regular
+https://ror.org/02c2kyt77,Eindhoven University of Technology,regular
+https://ror.org/012p63287,University of Groningen,regular
+https://ror.org/02jz4aj89,Maastricht University,regular
+https://ror.org/016xsfp80,Radboud University Nijmegen,regular
+https://ror.org/04b8v1s79,Tilburg University,regular
+https://ror.org/006hf6230,University of Twente,regular
+https://ror.org/04pp8hn57,Utrecht University,regular
+https://ror.org/04qw24q55,Wageningen University & Research,regular
+https://ror.org/057w15z03,Erasmus University Rotterdam,regular
+https://ror.org/027bh9e22,Leiden University,regular
+https://ror.org/018dfmf50,Open University of the Netherlands,regular
+https://ror.org/04w5ec154,University for Humanistics,associate
+https://ror.org/05cdyhf91,University of Aruba,network
+https://ror.org/02a46nr93,University of Curaçao,network
+https://ror.org/02dnvjf04,Faculteit Militaire Wetenschappen,network
