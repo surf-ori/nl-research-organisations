@@ -47,7 +47,7 @@ See `.env.example` for all available options including LLM provider configuratio
 
 ## Updating membership lists
 
-Open the notebook (`uvx marimo run notebook.py`), go to **Tab 4 — Membership Curation**. Each membership source shows an editable table and an "LLM Auto-update" button. Configure your LLM provider first in **Tab 3 — LLM Configuration**.
+Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data → Membership Curation**. Each membership source shows an editable table and an "LLM Auto-update" button. Configure your LLM provider first in **Curate Data → LLM Configuration**, just above it.
 
 ## Column reference
 
