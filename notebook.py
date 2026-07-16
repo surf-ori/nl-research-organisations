@@ -431,7 +431,7 @@ def pipeline_stages(
 
 
 @app.cell(hide_code=True)
-def llm_tab(
+def llm_section(
     conn_status,
     llm_api_key,
     llm_base_url,
@@ -439,17 +439,23 @@ def llm_tab(
     mo,
     test_btn,
 ):
-    # LLM configuration tab — configure any OpenAI-compatible endpoint for membership curation
-    llm_tab = mo.vstack([
+    # LLM configuration — configure any OpenAI-compatible endpoint for membership curation
+    llm_section = mo.vstack([
         mo.md(
             "## LLM Configuration\n"
-            "Configure any OpenAI-compatible endpoint. Settings are session-only — "
-            "add to `.env` to persist."
+            "Configure any OpenAI-compatible endpoint here. This is only needed if "
+            "you plan to use one of the **LLM Auto-update** buttons in Membership "
+            "Curation below — everything else on this page works without it. "
+            "Settings are session-only — add to `.env` to persist across restarts."
         ),
         llm_base_url,
         llm_api_key,
         llm_model_live,
         test_btn,
+        mo.md(
+            "Clicking **Test connection** checks the endpoint above and, on "
+            "success, populates the Model dropdown with whatever models it reports."
+        ),
         conn_status,
         mo.md(
             "**Provider examples:**\n"
@@ -458,7 +464,7 @@ def llm_tab(
             "- Ollama (local): `http://localhost:11434/v1`"
         ),
     ])
-    return (llm_tab,)
+    return (llm_section,)
 
 
 @app.cell(hide_code=True)
@@ -593,7 +599,7 @@ def page(
     dashboard_section,
     dataset_preview_section,
     full_refresh_btn,
-    llm_tab,
+    llm_section,
     membership_tab,
     mo,
     pipeline_tab,
@@ -607,7 +613,7 @@ def page(
         curate_data_intro,
         full_refresh_btn,
         refresh_output,
-        llm_tab,
+        llm_section,
         membership_tab,
         pipeline_tab,
     ])
