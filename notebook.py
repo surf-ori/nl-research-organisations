@@ -2,9 +2,10 @@
 # requires-python = ">=3.11"
 # dependencies = ["marimo", "duckdb", "pandas", "pyarrow", "requests", "openpyxl", "openai", "python-dotenv"]
 # ///
+
 import marimo
 
-__generated_with = "0.23.10"
+__generated_with = "0.23.14"
 app = marimo.App(width="wide")
 
 
@@ -19,15 +20,16 @@ def imports():
     from datetime import datetime, timezone
     from dotenv import load_dotenv
     load_dotenv()
-    return datetime, json, mo, os, pd, Path, timezone
+    return Path, datetime, json, mo, os, pd, timezone
 
 
 @app.cell(hide_code=True)
 def shared_state(Path, json):
-    # Shared constants — paths and per-stage metadata used throughout all tabs
+    # Shared constants — paths and per-stage metadata used throughout the notebook
     RAW_DIR = Path("data/raw")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
     CURATED_DIR = Path("data/curated")
+    LOGO_PATH = Path("assets/surf-logo.svg")
 
     # One entry per pipeline stage: display label, canonical source URL, and
     # whether the stage is a placeholder (not yet implemented)
@@ -56,7 +58,85 @@ def shared_state(Path, json):
                 return json.loads(p2.read_text())
         return None
 
-    return CURATED_DIR, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
+    return CURATED_DIR, LOGO_PATH, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
+
+
+@app.cell(hide_code=True)
+def preview_loaders(pd, json, OUT_PARQUET, CURATED_DIR, RAW_DIR):
+    # Preview loaders — one entry per pipeline dataset, used by the Dataset Preview dropdown
+    _CURATED_FILES = [
+        ("SURF Members (curated)",      "surf_members.csv"),
+        ("UKB (curated)",               "ukb_members.csv"),
+        ("SHB (curated)",               "shb_members.csv"),
+        ("UNL (curated)",               "unl_members.csv"),
+        ("UMCNL (curated)",             "umcnl_members.csv"),
+        ("VH (curated)",                "vh_members.csv"),
+        ("KNAW Institutes (curated)",   "knaw_institutes.csv"),
+        ("NWO-i (curated)",             "nwoi_institutes.csv"),
+        ("OpenAIRE Members (curated)",  "openaire_members.csv"),
+        ("NBN Prefixes (curated)",      "nbn_prefixes.csv"),
+    ]
+
+    def _load_assembled():
+        return pd.read_parquet(OUT_PARQUET) if OUT_PARQUET.exists() else None
+
+    def _load_ror_raw():
+        from src.ror_fetcher import load_orgs
+        rows = load_orgs()
+        return pd.DataFrame(rows) if rows else None
+
+    def _load_zenodo_raw():
+        path = RAW_DIR / "zenodo" / "nl-orgs-baseline.xlsx"
+        return pd.read_excel(path) if path.exists() else None
+
+    def _flatten_per_org_json(stage: str, list_key: str, limit: int = 300):
+        # OpenAlex/OpenAIRE cache one small JSON file per organisation (1700+ files) —
+        # parsing all of them takes minutes, so this samples the first `limit` files.
+        def _loader():
+            paths = sorted((RAW_DIR / stage).glob("*.json"))
+            paths = [p for p in paths if p.name != "_metadata.json"][:limit]
+            rows = []
+            for p in paths:
+                data = json.loads(p.read_text())
+                rows.extend(data.get(list_key, []))
+            return pd.DataFrame(rows) if rows else None
+        return _loader
+
+    def _load_barcelona_raw():
+        path = RAW_DIR / "barcelona" / "signatories.csv"
+        return pd.read_csv(path) if path.exists() else None
+
+    def _load_memberships_joined():
+        from src.ror_fetcher import load_orgs
+        from src.memberships import load_memberships
+        ror_urls = [o["ror_id_url"] for o in load_orgs()]
+        if not ror_urls:
+            return None
+        result = load_memberships(ror_urls)
+        df = pd.DataFrame.from_dict(result, orient="index").reset_index()
+        return df.rename(columns={"index": "ror_id_url"})
+
+    def _load_curated_csv(filename: str):
+        def _loader():
+            path = CURATED_DIR / filename
+            return pd.read_csv(path) if path.exists() else None
+        return _loader
+
+    PREVIEW_SOURCES = {
+        "Assembled Output": _load_assembled,
+        "ROR (raw)": _load_ror_raw,
+        "Zenodo Baseline (raw)": _load_zenodo_raw,
+        "OpenAlex (raw, first 300 files)": _flatten_per_org_json("openalex", "results"),
+        "OpenAIRE (raw, first 300 files)": _flatten_per_org_json("openaire", "results"),
+        "Barcelona Declaration (raw)": _load_barcelona_raw,
+        "ALEI / KVK": None,
+        "EU PIC": None,
+        "Memberships (joined)": _load_memberships_joined,
+    }
+    for _label, _filename in _CURATED_FILES:
+        PREVIEW_SOURCES[_label] = _load_curated_csv(_filename)
+
+    return (PREVIEW_SOURCES,)
 
 
 @app.cell(hide_code=True)
@@ -98,7 +178,7 @@ def llm_config(mo, os):
 
 
 @app.cell(hide_code=True)
-def llm_test_result(mo, llm_base_url, llm_api_key, llm_model, test_btn):
+def llm_test_result(llm_api_key, llm_base_url, llm_model, mo, test_btn):
     # LLM connection test — shows a spinner while the request is in flight, result appears after
     if test_btn.value:
         from src.llm_curator import test_connection, fetch_models
@@ -114,7 +194,7 @@ def llm_test_result(mo, llm_base_url, llm_api_key, llm_model, test_btn):
 
 
 @app.cell(hide_code=True)
-def llm_model_live(mo, llm_model, model_ids, os):
+def llm_model_live(llm_model, mo, model_ids, os):
     # Live model dropdown — rebuilds with API results after a successful connection test
     # llm_model.options returns a dict in marimo 0.23+; use iter() to get the first key safely
     options = model_ids if model_ids else llm_model.options
@@ -127,11 +207,27 @@ def llm_model_live(mo, llm_model, model_ids, os):
     return (llm_model_live,)
 
 
-# ── Dashboard ──────────────────────────────────────────────────────────────────
+@app.cell(hide_code=True)
+def dashboard_header(mo, LOGO_PATH):
+    # Dashboard header — title + intro, with the SURF logo top right
+    dashboard_header = mo.hstack(
+        [
+            mo.md(
+                "# NL Research Organisations\n"
+                "A reference table of research organisations in the Kingdom of the "
+                "Netherlands, assembled from ROR plus several enrichment sources and "
+                "curated membership lists."
+            ),
+            mo.image(src=str(LOGO_PATH), alt="SURF logo", width=140),
+        ],
+        justify="space-between",
+        align="start",
+    )
+    return (dashboard_header,)
 
 
 @app.cell(hide_code=True)
-def dashboard(mo, pd, datetime, timezone, OUT_PARQUET, STAGE_META, read_meta):
+def dashboard_section(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, timezone):
     # Dashboard — freshness cards per pipeline stage and overall organisation count
     def freshness_badge(fetched_at: str | None) -> str:
         # Translate an ISO timestamp into a human-readable age label
@@ -170,17 +266,56 @@ def dashboard(mo, pd, datetime, timezone, OUT_PARQUET, STAGE_META, read_meta):
         except Exception:
             pass
 
-    full_refresh_btn = mo.ui.button(label="Full Refresh", kind="success")
-    dashboard_tab = mo.vstack([
-        mo.md(f"# NL Research Organisations\nTotal organisations in output: **{total}**"),
+    dashboard_section = mo.vstack([
+        mo.md(
+            "Each card below is one pipeline source. **Value** is the record count "
+            "last fetched; the caption shows how fresh that cache is — **fresh** "
+            "(under 7 days), **aging** (under 30 days), or **stale** (30+ days) — "
+            "followed by the exact timestamp of the last fetch. `placeholder` "
+            "sources aren't implemented yet.\n\n"
+            f"Total organisations in the current output: **{total}**.\n\n"
+            "The file this pipeline produces (`data/nl_research_orgs.parquet`) "
+            "feeds the Dutch Open Research Information data lake, and is archived "
+            "at the [SURF Zenodo community](https://zenodo.org/communities/surf/) "
+            "where it gets fetched for further processing."
+        ),
         mo.hstack(cards, wrap=True),
-        full_refresh_btn,
     ])
-    return dashboard_tab, full_refresh_btn, freshness_badge
+    return (dashboard_section,)
 
 
 @app.cell(hide_code=True)
-def full_refresh(mo, full_refresh_btn):
+def curate_data_intro(mo):
+    # Curate Data — explains this section and the logical order of what follows
+    curate_data_intro = mo.md(
+        "## Curate Data\n"
+        "This is where the output file gets (re)built. The sections below run in a "
+        "logical order:\n\n"
+        "1. **LLM Configuration** — optional, but required if you plan to use any "
+        "\"LLM Auto-update\" button further down.\n"
+        "2. **Membership Curation** — review and edit the curated membership CSVs "
+        "(SURF, UKB, SHB, …) that feed the membership flags in the output.\n"
+        "3. **Pipeline Stages** — fetch or refresh each raw data source "
+        "individually.\n\n"
+        "Or click **Full Refresh** below to run all pipeline stages in order and "
+        "reassemble the output in one click. It re-fetches every source with "
+        "`force_refresh=True` and finishes by re-running the assembler, so "
+        "`data/nl_research_orgs.parquet` ends up reflecting everything currently in "
+        "`data/curated/` plus freshly-fetched raw data. This can take a while and "
+        "calls every external API."
+    )
+    return (curate_data_intro,)
+
+
+@app.cell(hide_code=True)
+def full_refresh_button(mo):
+    # Full Refresh button — see the explanation in the Curate Data section above
+    full_refresh_btn = mo.ui.button(label="Full Refresh", kind="success")
+    return (full_refresh_btn,)
+
+
+@app.cell(hide_code=True)
+def full_refresh(full_refresh_btn, mo):
     # Full pipeline refresh — runs all stages in dependency order; shows progress bar while running
     if full_refresh_btn.value:
         import importlib
@@ -210,11 +345,14 @@ def full_refresh(mo, full_refresh_btn):
     return (refresh_output,)
 
 
-# ── Pipeline Stages ────────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refresh_results):
+def pipeline_section(
+    STAGE_META,
+    get_refresh_results,
+    mo,
+    read_meta,
+    set_refresh_results,
+):
     # Pipeline stages — accordion with one collapsible section per data source
     import importlib as _il
 
@@ -265,48 +403,59 @@ def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refr
 
         btn = mo.ui.button(label=f"Refresh {info['label']}", on_click=_refresh_fn(stage, info["label"]))
 
-        # ROR only: show the first 10 cached rows as a preview without hitting the network
-        preview = mo.md("")
-        if stage == "ror":
-            try:
-                m = _il.import_module("src.ror_fetcher")
-                rows = m.load_orgs()[:10]
-                preview = mo.ui.table(pd.DataFrame(rows)) if rows else mo.md("No data cached yet.")
-            except Exception:
-                preview = mo.md("Run Refresh to load data.")
-
         body = mo.vstack([
             mo.md(
                 f"**Source:** [{info['source_url']}]({info['source_url']})  \n"
                 f"**Last updated:** {ts}  \n**Records:** {count}"
             ),
             btn,
+            mo.md(
+                f"Clicking this re-fetches **{info['label']}** from its source and "
+                "updates the cached data — see the result in **Dataset Preview** above."
+            ),
             status_md,
-            preview,
         ])
         return info["label"], body
 
     accordion_items = dict(_make_section(s, i) for s, i in STAGE_META.items())
-    pipeline_tab = mo.accordion(accordion_items)
-    return (pipeline_tab,)
-
-
-# ── LLM Configuration ──────────────────────────────────────────────────────────
+    pipeline_section = mo.vstack([
+        mo.md(
+            "## Pipeline Stages\n"
+            "One section per raw data source. **Refresh `<Source>`** re-fetches "
+            "that source only; freshness shown here also drives the Dashboard "
+            "cards above and the raw entries in Dataset Preview."
+        ),
+        mo.accordion(accordion_items),
+    ])
+    return (pipeline_section,)
 
 
 @app.cell(hide_code=True)
-def llm_tab(mo, llm_base_url, llm_api_key, llm_model_live, test_btn, conn_status):
-    # LLM configuration tab — configure any OpenAI-compatible endpoint for membership curation
-    llm_tab = mo.vstack([
+def llm_section(
+    conn_status,
+    llm_api_key,
+    llm_base_url,
+    llm_model_live,
+    mo,
+    test_btn,
+):
+    # LLM configuration — configure any OpenAI-compatible endpoint for membership curation
+    llm_section = mo.vstack([
         mo.md(
             "## LLM Configuration\n"
-            "Configure any OpenAI-compatible endpoint. Settings are session-only — "
-            "add to `.env` to persist."
+            "Configure any OpenAI-compatible endpoint here. This is only needed if "
+            "you plan to use one of the **LLM Auto-update** buttons in Membership "
+            "Curation below — everything else on this page works without it. "
+            "Settings are session-only — add to `.env` to persist across restarts."
         ),
         llm_base_url,
         llm_api_key,
         llm_model_live,
         test_btn,
+        mo.md(
+            "Clicking **Test connection** checks the endpoint above and, on "
+            "success, populates the Model dropdown with whatever models it reports."
+        ),
         conn_status,
         mo.md(
             "**Provider examples:**\n"
@@ -315,16 +464,19 @@ def llm_tab(mo, llm_base_url, llm_api_key, llm_model_live, test_btn, conn_status
             "- Ollama (local): `http://localhost:11434/v1`"
         ),
     ])
-    return (llm_tab,)
-
-
-# ── Membership Curation ────────────────────────────────────────────────────────
+    return (llm_section,)
 
 
 @app.cell(hide_code=True)
 def membership_curation(
-    mo, pd, CURATED_DIR, llm_base_url, llm_api_key, llm_model_live,
-    get_save_status, set_save_status,
+    CURATED_DIR,
+    get_save_status,
+    llm_api_key,
+    llm_base_url,
+    llm_model_live,
+    mo,
+    pd,
+    set_save_status,
 ):
     # Membership curation — editable tables for each curated CSV file
     # Each section has a Save button (writes to disk) and an LLM button (suggests additions)
@@ -390,47 +542,92 @@ def membership_curation(
         _make_membership_section(f, lbl, url)
         for f, (lbl, url) in MEMBERSHIP_SOURCES.items()
     )
-    membership_tab = mo.accordion(sections)
-    return (membership_tab,)
-
-
-# ── Output Preview ─────────────────────────────────────────────────────────────
+    membership_section = mo.vstack([
+        mo.md(
+            "## Membership Curation\n"
+            "One editable table per curated membership CSV. Edit cells directly, "
+            "then **Save changes** to write your edits back to the CSV on disk. "
+            "**LLM Auto-update** asks the LLM configured above to compare the "
+            "linked source URL against the current list and suggest additions, "
+            "overwriting the CSV on success (requires LLM Configuration above)."
+        ),
+        mo.accordion(sections),
+    ])
+    return (membership_section,)
 
 
 @app.cell(hide_code=True)
-def output_preview(mo, pd, OUT_PARQUET):
-    # Output preview — interactive sortable/filterable table of the assembled parquet
-    if OUT_PARQUET.exists():
-        df_out = pd.read_parquet(OUT_PARQUET)
-        output_tab = mo.vstack([
-            mo.md(
-                f"## Output: `{OUT_PARQUET}`\n"
-                f"{len(df_out)} organisations · {len(df_out.columns)} columns"
-            ),
-            mo.ui.table(df_out),
-        ])
+def dataset_preview_dropdown(mo, PREVIEW_SOURCES):
+    # Dataset preview dropdown — defaults to the final assembled output
+    dataset_dropdown = mo.ui.dropdown(
+        options=list(PREVIEW_SOURCES.keys()),
+        value="Assembled Output",
+        label="Dataset",
+    )
+    return (dataset_dropdown,)
+
+
+@app.cell(hide_code=True)
+def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
+    # Dataset preview table — renders whichever dataset is selected above
+    _loader = PREVIEW_SOURCES.get(dataset_dropdown.value)
+    if _loader is None:
+        _table = mo.callout(mo.md("Not yet implemented — awaiting API access."), kind="warn")
     else:
-        output_tab = mo.callout(
-            mo.md("No output file yet. Run **Full Refresh** from the Dashboard tab."),
-            kind="warn",
-        )
-    return (output_tab,)
+        with mo.status.spinner(title=f"Loading {dataset_dropdown.value}…", remove_on_exit=True):
+            _df = _loader()
+        if _df is None:
+            _table = mo.callout(
+                mo.md("No data yet for this source — run its Refresh button in **Pipeline Stages** below."),
+                kind="warn",
+            )
+        else:
+            _table = mo.vstack([
+                mo.md(f"{len(_df)} rows · {len(_df.columns)} columns"),
+                mo.ui.table(_df),
+            ])
 
-
-# ── Tabs ──────────────────────────────────────────────────────────────────────
+    dataset_preview_section = mo.vstack([
+        mo.md(
+            "## Dataset Preview\n"
+            "Pick any dataset to inspect it directly — the final assembled output, "
+            "a raw pipeline source, or a curated membership list. Defaults to the "
+            "assembled output. Raw per-organisation sources (OpenAlex, OpenAIRE) are "
+            "capped to the first 300 cached files for speed; every other view shows "
+            "the full dataset."
+        ),
+        dataset_dropdown,
+        _table,
+    ])
+    return (dataset_preview_section,)
 
 
 @app.cell(hide_code=True)
-def tabs(mo, dashboard_tab, refresh_output, pipeline_tab, llm_tab, membership_tab, output_tab):
-    # Main layout — compose all five panels into a tabbed notebook interface
-    tabs_ui = mo.ui.tabs({
-        "Dashboard":           mo.vstack([dashboard_tab, refresh_output]),
-        "Pipeline Stages":     pipeline_tab,
-        "LLM Configuration":   llm_tab,
-        "Membership Curation": membership_tab,
-        "Output Preview":      output_tab,
-    })
-    tabs_ui
+def page(
+    curate_data_intro,
+    dashboard_header,
+    dashboard_section,
+    dataset_preview_section,
+    full_refresh_btn,
+    llm_section,
+    membership_section,
+    mo,
+    pipeline_section,
+    refresh_output,
+):
+    # Main layout — single scrolling page, no tabs
+    page_ui = mo.vstack([
+        dashboard_header,
+        dashboard_section,
+        dataset_preview_section,
+        curate_data_intro,
+        full_refresh_btn,
+        refresh_output,
+        llm_section,
+        membership_section,
+        pipeline_section,
+    ])
+    page_ui
     return
 
 
