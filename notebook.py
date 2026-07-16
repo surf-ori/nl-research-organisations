@@ -130,7 +130,26 @@ def llm_model_live(llm_model, mo, model_ids, os):
 
 
 @app.cell(hide_code=True)
-def dashboard(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, timezone):
+def dashboard_header(mo, LOGO_PATH):
+    # Dashboard header — title + intro, with the SURF logo top right
+    dashboard_header = mo.hstack(
+        [
+            mo.md(
+                "# NL Research Organisations\n"
+                "A reference table of research organisations in the Kingdom of the "
+                "Netherlands, assembled from ROR plus several enrichment sources and "
+                "curated membership lists."
+            ),
+            mo.image(src=str(LOGO_PATH), alt="SURF logo", width=140),
+        ],
+        justify="space-between",
+        align="start",
+    )
+    return (dashboard_header,)
+
+
+@app.cell(hide_code=True)
+def dashboard_section(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, timezone):
     # Dashboard — freshness cards per pipeline stage and overall organisation count
     def freshness_badge(fetched_at: str | None) -> str:
         # Translate an ISO timestamp into a human-readable age label
@@ -169,13 +188,29 @@ def dashboard(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, timezone):
         except Exception:
             pass
 
-    full_refresh_btn = mo.ui.button(label="Full Refresh", kind="success")
-    dashboard_tab = mo.vstack([
-        mo.md(f"# NL Research Organisations\nTotal organisations in output: **{total}**"),
+    dashboard_section = mo.vstack([
+        mo.md(
+            "Each card below is one pipeline source. **Value** is the record count "
+            "last fetched; the caption shows how fresh that cache is — **fresh** "
+            "(under 7 days), **aging** (under 30 days), or **stale** (30+ days) — "
+            "followed by the exact timestamp of the last fetch. `placeholder` "
+            "sources aren't implemented yet.\n\n"
+            f"Total organisations in the current output: **{total}**.\n\n"
+            "The file this pipeline produces (`data/nl_research_orgs.parquet`) "
+            "feeds the Dutch Open Research Information data lake, and is archived "
+            "at the [SURF Zenodo community](https://zenodo.org/communities/surf/) "
+            "where it gets fetched for further processing."
+        ),
         mo.hstack(cards, wrap=True),
-        full_refresh_btn,
     ])
-    return dashboard_tab, full_refresh_btn
+    return (dashboard_section,)
+
+
+@app.cell(hide_code=True)
+def full_refresh_button(mo):
+    # Full Refresh button — lives in the Curate Data section below; see its explanation there
+    full_refresh_btn = mo.ui.button(label="Full Refresh", kind="success")
+    return (full_refresh_btn,)
 
 
 @app.cell(hide_code=True)
@@ -425,8 +460,10 @@ def output_preview(OUT_PARQUET, mo, pd):
 
 
 @app.cell(hide_code=True)
-def tabs(
-    dashboard_tab,
+def page(
+    dashboard_header,
+    dashboard_section,
+    full_refresh_btn,
     llm_tab,
     membership_tab,
     mo,
@@ -434,15 +471,18 @@ def tabs(
     pipeline_tab,
     refresh_output,
 ):
-    # Main layout — compose all five panels into a tabbed notebook interface
-    tabs_ui = mo.ui.tabs({
-        "Dashboard":           mo.vstack([dashboard_tab, refresh_output]),
-        "Pipeline Stages":     pipeline_tab,
-        "LLM Configuration":   llm_tab,
-        "Membership Curation": membership_tab,
-        "Output Preview":      output_tab,
-    })
-    tabs_ui
+    # Main layout — single scrolling page, no tabs
+    page_ui = mo.vstack([
+        dashboard_header,
+        dashboard_section,
+        full_refresh_btn,
+        refresh_output,
+        output_tab,
+        llm_tab,
+        membership_tab,
+        pipeline_tab,
+    ])
+    page_ui
     return
 
 
