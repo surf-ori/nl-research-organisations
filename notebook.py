@@ -542,8 +542,18 @@ def membership_curation(
         _make_membership_section(f, lbl, url)
         for f, (lbl, url) in MEMBERSHIP_SOURCES.items()
     )
-    membership_tab = mo.accordion(sections)
-    return (membership_tab,)
+    membership_section = mo.vstack([
+        mo.md(
+            "## Membership Curation\n"
+            "One editable table per curated membership CSV. Edit cells directly, "
+            "then **Save changes** to write your edits back to the CSV on disk. "
+            "**LLM Auto-update** asks the LLM configured above to compare the "
+            "linked source URL against the current list and suggest additions, "
+            "overwriting the CSV on success (requires LLM Configuration above)."
+        ),
+        mo.accordion(sections),
+    ])
+    return (membership_section,)
 
 
 @app.cell(hide_code=True)
@@ -600,7 +610,7 @@ def page(
     dataset_preview_section,
     full_refresh_btn,
     llm_section,
-    membership_tab,
+    membership_section,
     mo,
     pipeline_tab,
     refresh_output,
@@ -614,7 +624,7 @@ def page(
         full_refresh_btn,
         refresh_output,
         llm_section,
-        membership_tab,
+        membership_section,
         pipeline_tab,
     ])
     page_ui
