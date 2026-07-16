@@ -346,11 +346,10 @@ def full_refresh(full_refresh_btn, mo):
 
 
 @app.cell(hide_code=True)
-def pipeline_stages(
+def pipeline_section(
     STAGE_META,
     get_refresh_results,
     mo,
-    pd,
     read_meta,
     set_refresh_results,
 ):
@@ -404,30 +403,31 @@ def pipeline_stages(
 
         btn = mo.ui.button(label=f"Refresh {info['label']}", on_click=_refresh_fn(stage, info["label"]))
 
-        # ROR only: show the first 10 cached rows as a preview without hitting the network
-        preview = mo.md("")
-        if stage == "ror":
-            try:
-                m = _il.import_module("src.ror_fetcher")
-                rows = m.load_orgs()[:10]
-                preview = mo.ui.table(pd.DataFrame(rows)) if rows else mo.md("No data cached yet.")
-            except Exception:
-                preview = mo.md("Run Refresh to load data.")
-
         body = mo.vstack([
             mo.md(
                 f"**Source:** [{info['source_url']}]({info['source_url']})  \n"
                 f"**Last updated:** {ts}  \n**Records:** {count}"
             ),
             btn,
+            mo.md(
+                f"Clicking this re-fetches **{info['label']}** from its source and "
+                "updates the cached data — see the result in **Dataset Preview** above."
+            ),
             status_md,
-            preview,
         ])
         return info["label"], body
 
     accordion_items = dict(_make_section(s, i) for s, i in STAGE_META.items())
-    pipeline_tab = mo.accordion(accordion_items)
-    return (pipeline_tab,)
+    pipeline_section = mo.vstack([
+        mo.md(
+            "## Pipeline Stages\n"
+            "One section per raw data source. **Refresh `<Source>`** re-fetches "
+            "that source only; freshness shown here also drives the Dashboard "
+            "cards above and the raw entries in Dataset Preview."
+        ),
+        mo.accordion(accordion_items),
+    ])
+    return (pipeline_section,)
 
 
 @app.cell(hide_code=True)
@@ -612,7 +612,7 @@ def page(
     llm_section,
     membership_section,
     mo,
-    pipeline_tab,
+    pipeline_section,
     refresh_output,
 ):
     # Main layout — single scrolling page, no tabs
@@ -625,7 +625,7 @@ def page(
         refresh_output,
         llm_section,
         membership_section,
-        pipeline_tab,
+        pipeline_section,
     ])
     page_ui
     return
