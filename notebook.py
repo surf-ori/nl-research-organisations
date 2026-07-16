@@ -2,9 +2,10 @@
 # requires-python = ">=3.11"
 # dependencies = ["marimo", "duckdb", "pandas", "pyarrow", "requests", "openpyxl", "openai", "python-dotenv"]
 # ///
+
 import marimo
 
-__generated_with = "0.23.10"
+__generated_with = "0.23.14"
 app = marimo.App(width="wide")
 
 
@@ -19,15 +20,16 @@ def imports():
     from datetime import datetime, timezone
     from dotenv import load_dotenv
     load_dotenv()
-    return datetime, json, mo, os, pd, Path, timezone
+    return Path, datetime, json, mo, os, pd, timezone
 
 
 @app.cell(hide_code=True)
 def shared_state(Path, json):
-    # Shared constants — paths and per-stage metadata used throughout all tabs
+    # Shared constants — paths and per-stage metadata used throughout the notebook
     RAW_DIR = Path("data/raw")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
     CURATED_DIR = Path("data/curated")
+    LOGO_PATH = Path("assets/surf-logo.svg")
 
     # One entry per pipeline stage: display label, canonical source URL, and
     # whether the stage is a placeholder (not yet implemented)
@@ -56,7 +58,7 @@ def shared_state(Path, json):
                 return json.loads(p2.read_text())
         return None
 
-    return CURATED_DIR, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
+    return CURATED_DIR, LOGO_PATH, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
 
 
 @app.cell(hide_code=True)
@@ -98,7 +100,7 @@ def llm_config(mo, os):
 
 
 @app.cell(hide_code=True)
-def llm_test_result(mo, llm_base_url, llm_api_key, llm_model, test_btn):
+def llm_test_result(llm_api_key, llm_base_url, llm_model, mo, test_btn):
     # LLM connection test — shows a spinner while the request is in flight, result appears after
     if test_btn.value:
         from src.llm_curator import test_connection, fetch_models
@@ -114,7 +116,7 @@ def llm_test_result(mo, llm_base_url, llm_api_key, llm_model, test_btn):
 
 
 @app.cell(hide_code=True)
-def llm_model_live(mo, llm_model, model_ids, os):
+def llm_model_live(llm_model, mo, model_ids, os):
     # Live model dropdown — rebuilds with API results after a successful connection test
     # llm_model.options returns a dict in marimo 0.23+; use iter() to get the first key safely
     options = model_ids if model_ids else llm_model.options
@@ -127,11 +129,8 @@ def llm_model_live(mo, llm_model, model_ids, os):
     return (llm_model_live,)
 
 
-# ── Dashboard ──────────────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def dashboard(mo, pd, datetime, timezone, OUT_PARQUET, STAGE_META, read_meta):
+def dashboard(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, timezone):
     # Dashboard — freshness cards per pipeline stage and overall organisation count
     def freshness_badge(fetched_at: str | None) -> str:
         # Translate an ISO timestamp into a human-readable age label
@@ -176,11 +175,11 @@ def dashboard(mo, pd, datetime, timezone, OUT_PARQUET, STAGE_META, read_meta):
         mo.hstack(cards, wrap=True),
         full_refresh_btn,
     ])
-    return dashboard_tab, full_refresh_btn, freshness_badge
+    return dashboard_tab, full_refresh_btn
 
 
 @app.cell(hide_code=True)
-def full_refresh(mo, full_refresh_btn):
+def full_refresh(full_refresh_btn, mo):
     # Full pipeline refresh — runs all stages in dependency order; shows progress bar while running
     if full_refresh_btn.value:
         import importlib
@@ -210,11 +209,15 @@ def full_refresh(mo, full_refresh_btn):
     return (refresh_output,)
 
 
-# ── Pipeline Stages ────────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refresh_results):
+def pipeline_stages(
+    STAGE_META,
+    get_refresh_results,
+    mo,
+    pd,
+    read_meta,
+    set_refresh_results,
+):
     # Pipeline stages — accordion with one collapsible section per data source
     import importlib as _il
 
@@ -291,11 +294,15 @@ def pipeline_stages(mo, pd, STAGE_META, read_meta, get_refresh_results, set_refr
     return (pipeline_tab,)
 
 
-# ── LLM Configuration ──────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def llm_tab(mo, llm_base_url, llm_api_key, llm_model_live, test_btn, conn_status):
+def llm_tab(
+    conn_status,
+    llm_api_key,
+    llm_base_url,
+    llm_model_live,
+    mo,
+    test_btn,
+):
     # LLM configuration tab — configure any OpenAI-compatible endpoint for membership curation
     llm_tab = mo.vstack([
         mo.md(
@@ -318,13 +325,16 @@ def llm_tab(mo, llm_base_url, llm_api_key, llm_model_live, test_btn, conn_status
     return (llm_tab,)
 
 
-# ── Membership Curation ────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
 def membership_curation(
-    mo, pd, CURATED_DIR, llm_base_url, llm_api_key, llm_model_live,
-    get_save_status, set_save_status,
+    CURATED_DIR,
+    get_save_status,
+    llm_api_key,
+    llm_base_url,
+    llm_model_live,
+    mo,
+    pd,
+    set_save_status,
 ):
     # Membership curation — editable tables for each curated CSV file
     # Each section has a Save button (writes to disk) and an LLM button (suggests additions)
@@ -394,11 +404,8 @@ def membership_curation(
     return (membership_tab,)
 
 
-# ── Output Preview ─────────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def output_preview(mo, pd, OUT_PARQUET):
+def output_preview(OUT_PARQUET, mo, pd):
     # Output preview — interactive sortable/filterable table of the assembled parquet
     if OUT_PARQUET.exists():
         df_out = pd.read_parquet(OUT_PARQUET)
@@ -417,11 +424,16 @@ def output_preview(mo, pd, OUT_PARQUET):
     return (output_tab,)
 
 
-# ── Tabs ──────────────────────────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
-def tabs(mo, dashboard_tab, refresh_output, pipeline_tab, llm_tab, membership_tab, output_tab):
+def tabs(
+    dashboard_tab,
+    llm_tab,
+    membership_tab,
+    mo,
+    output_tab,
+    pipeline_tab,
+    refresh_output,
+):
     # Main layout — compose all five panels into a tabbed notebook interface
     tabs_ui = mo.ui.tabs({
         "Dashboard":           mo.vstack([dashboard_tab, refresh_output]),
