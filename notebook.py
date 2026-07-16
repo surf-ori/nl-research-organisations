@@ -62,6 +62,84 @@ def shared_state(Path, json):
 
 
 @app.cell(hide_code=True)
+def preview_loaders(pd, json, OUT_PARQUET, CURATED_DIR, RAW_DIR):
+    # Preview loaders — one entry per pipeline dataset, used by the Dataset Preview dropdown
+    _CURATED_FILES = [
+        ("SURF Members (curated)",      "surf_members.csv"),
+        ("UKB (curated)",               "ukb_members.csv"),
+        ("SHB (curated)",               "shb_members.csv"),
+        ("UNL (curated)",               "unl_members.csv"),
+        ("UMCNL (curated)",             "umcnl_members.csv"),
+        ("VH (curated)",                "vh_members.csv"),
+        ("KNAW Institutes (curated)",   "knaw_institutes.csv"),
+        ("NWO-i (curated)",             "nwoi_institutes.csv"),
+        ("OpenAIRE Members (curated)",  "openaire_members.csv"),
+        ("NBN Prefixes (curated)",      "nbn_prefixes.csv"),
+    ]
+
+    def _load_assembled():
+        return pd.read_parquet(OUT_PARQUET) if OUT_PARQUET.exists() else None
+
+    def _load_ror_raw():
+        from src.ror_fetcher import load_orgs
+        rows = load_orgs()
+        return pd.DataFrame(rows) if rows else None
+
+    def _load_zenodo_raw():
+        path = RAW_DIR / "zenodo" / "nl-orgs-baseline.xlsx"
+        return pd.read_excel(path) if path.exists() else None
+
+    def _flatten_per_org_json(stage: str, list_key: str, limit: int = 300):
+        # OpenAlex/OpenAIRE cache one small JSON file per organisation (1700+ files) —
+        # parsing all of them takes minutes, so this samples the first `limit` files.
+        def _loader():
+            paths = sorted((RAW_DIR / stage).glob("*.json"))
+            paths = [p for p in paths if p.name != "_metadata.json"][:limit]
+            rows = []
+            for p in paths:
+                data = json.loads(p.read_text())
+                rows.extend(data.get(list_key, []))
+            return pd.DataFrame(rows) if rows else None
+        return _loader
+
+    def _load_barcelona_raw():
+        path = RAW_DIR / "barcelona" / "signatories.csv"
+        return pd.read_csv(path) if path.exists() else None
+
+    def _load_memberships_joined():
+        from src.ror_fetcher import load_orgs
+        from src.memberships import load_memberships
+        ror_urls = [o["ror_id_url"] for o in load_orgs()]
+        if not ror_urls:
+            return None
+        result = load_memberships(ror_urls)
+        df = pd.DataFrame.from_dict(result, orient="index").reset_index()
+        return df.rename(columns={"index": "ror_id_url"})
+
+    def _load_curated_csv(filename: str):
+        def _loader():
+            path = CURATED_DIR / filename
+            return pd.read_csv(path) if path.exists() else None
+        return _loader
+
+    PREVIEW_SOURCES = {
+        "Assembled Output": _load_assembled,
+        "ROR (raw)": _load_ror_raw,
+        "Zenodo Baseline (raw)": _load_zenodo_raw,
+        "OpenAlex (raw, first 300 files)": _flatten_per_org_json("openalex", "results"),
+        "OpenAIRE (raw, first 300 files)": _flatten_per_org_json("openaire", "results"),
+        "Barcelona Declaration (raw)": _load_barcelona_raw,
+        "ALEI / KVK": None,
+        "EU PIC": None,
+        "Memberships (joined)": _load_memberships_joined,
+    }
+    for _label, _filename in _CURATED_FILES:
+        PREVIEW_SOURCES[_label] = _load_curated_csv(_filename)
+
+    return (PREVIEW_SOURCES,)
+
+
+@app.cell(hide_code=True)
 def refresh_state(mo):
     # Refresh results state — accumulates per-stage fetch outcomes across button clicks
     # mo.state() persists values across reactive re-runs of this cell
@@ -440,34 +518,60 @@ def membership_curation(
 
 
 @app.cell(hide_code=True)
-def output_preview(OUT_PARQUET, mo, pd):
-    # Output preview — interactive sortable/filterable table of the assembled parquet
-    if OUT_PARQUET.exists():
-        df_out = pd.read_parquet(OUT_PARQUET)
-        output_tab = mo.vstack([
-            mo.md(
-                f"## Output: `{OUT_PARQUET}`\n"
-                f"{len(df_out)} organisations · {len(df_out.columns)} columns"
-            ),
-            mo.ui.table(df_out),
-        ])
+def dataset_preview_dropdown(mo, PREVIEW_SOURCES):
+    # Dataset preview dropdown — defaults to the final assembled output
+    dataset_dropdown = mo.ui.dropdown(
+        options=list(PREVIEW_SOURCES.keys()),
+        value="Assembled Output",
+        label="Dataset",
+    )
+    return (dataset_dropdown,)
+
+
+@app.cell(hide_code=True)
+def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
+    # Dataset preview table — renders whichever dataset is selected above
+    _loader = PREVIEW_SOURCES.get(dataset_dropdown.value)
+    if _loader is None:
+        _table = mo.callout(mo.md("Not yet implemented — awaiting API access."), kind="warn")
     else:
-        output_tab = mo.callout(
-            mo.md("No output file yet. Run **Full Refresh** from the Dashboard tab."),
-            kind="warn",
-        )
-    return (output_tab,)
+        with mo.status.spinner(title=f"Loading {dataset_dropdown.value}…", remove_on_exit=True):
+            _df = _loader()
+        if _df is None:
+            _table = mo.callout(
+                mo.md("No data yet for this source — run its Refresh button in **Pipeline Stages** below."),
+                kind="warn",
+            )
+        else:
+            _table = mo.vstack([
+                mo.md(f"{len(_df)} rows · {len(_df.columns)} columns"),
+                mo.ui.table(_df),
+            ])
+
+    dataset_preview_section = mo.vstack([
+        mo.md(
+            "## Dataset Preview\n"
+            "Pick any dataset to inspect it directly — the final assembled output, "
+            "a raw pipeline source, or a curated membership list. Defaults to the "
+            "assembled output. Raw per-organisation sources (OpenAlex, OpenAIRE) are "
+            "capped to the first 300 cached files for speed; every other view shows "
+            "the full dataset."
+        ),
+        dataset_dropdown,
+        _table,
+    ])
+    return (dataset_preview_section,)
 
 
 @app.cell(hide_code=True)
 def page(
     dashboard_header,
     dashboard_section,
+    dataset_preview_section,
     full_refresh_btn,
     llm_tab,
     membership_tab,
     mo,
-    output_tab,
     pipeline_tab,
     refresh_output,
 ):
@@ -477,7 +581,7 @@ def page(
         dashboard_section,
         full_refresh_btn,
         refresh_output,
-        output_tab,
+        dataset_preview_section,
         llm_tab,
         membership_tab,
         pipeline_tab,
