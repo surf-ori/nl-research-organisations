@@ -285,8 +285,31 @@ def dashboard_section(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, time
 
 
 @app.cell(hide_code=True)
+def curate_data_intro(mo):
+    # Curate Data — explains this section and the logical order of what follows
+    curate_data_intro = mo.md(
+        "## Curate Data\n"
+        "This is where the output file gets (re)built. The sections below run in a "
+        "logical order:\n\n"
+        "1. **LLM Configuration** — optional, but required if you plan to use any "
+        "\"LLM Auto-update\" button further down.\n"
+        "2. **Membership Curation** — review and edit the curated membership CSVs "
+        "(SURF, UKB, SHB, …) that feed the membership flags in the output.\n"
+        "3. **Pipeline Stages** — fetch or refresh each raw data source "
+        "individually.\n\n"
+        "Or click **Full Refresh** below to run all pipeline stages in order and "
+        "reassemble the output in one click. It re-fetches every source with "
+        "`force_refresh=True` and finishes by re-running the assembler, so "
+        "`data/nl_research_orgs.parquet` ends up reflecting everything currently in "
+        "`data/curated/` plus freshly-fetched raw data. This can take a while and "
+        "calls every external API."
+    )
+    return (curate_data_intro,)
+
+
+@app.cell(hide_code=True)
 def full_refresh_button(mo):
-    # Full Refresh button — lives in the Curate Data section below; see its explanation there
+    # Full Refresh button — see the explanation in the Curate Data section above
     full_refresh_btn = mo.ui.button(label="Full Refresh", kind="success")
     return (full_refresh_btn,)
 
@@ -565,6 +588,7 @@ def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
 
 @app.cell(hide_code=True)
 def page(
+    curate_data_intro,
     dashboard_header,
     dashboard_section,
     dataset_preview_section,
@@ -579,9 +603,10 @@ def page(
     page_ui = mo.vstack([
         dashboard_header,
         dashboard_section,
+        dataset_preview_section,
+        curate_data_intro,
         full_refresh_btn,
         refresh_output,
-        dataset_preview_section,
         llm_tab,
         membership_tab,
         pipeline_tab,
