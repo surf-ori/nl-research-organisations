@@ -1,26 +1,125 @@
 ror_id_url,name,member_type
-https://ror.org/04dkp9463,University of Amsterdam,instelling
-https://ror.org/008xxew50,Vrije Universiteit Amsterdam,instelling
-https://ror.org/02e2c7k09,Delft University of Technology,instelling
-https://ror.org/02c2kyt77,Eindhoven University of Technology,instelling
-https://ror.org/012p63287,University of Groningen,instelling
-https://ror.org/02jz4aj89,Maastricht University,instelling
-https://ror.org/016xsfp80,Radboud University Nijmegen,instelling
-https://ror.org/04b8v1s79,Tilburg University,instelling
-https://ror.org/006hf6230,University of Twente,instelling
-https://ror.org/04pp8hn57,Utrecht University,instelling
-https://ror.org/04qw24q55,Wageningen University & Research,instelling
-https://ror.org/057w15z03,Erasmus University Rotterdam,instelling
-https://ror.org/027bh9e22,Leiden University,instelling
-https://ror.org/018dfmf50,Open University of the Netherlands,instelling
-https://ror.org/05grdyy37,Amsterdam University Medical Centers,instelling
-https://ror.org/018906e22,Erasmus MC,instelling
-https://ror.org/05xvt9f17,Leiden University Medical Center,instelling
-https://ror.org/05wg1m734,Radboud University Medical Center,instelling
-https://ror.org/03cv38k47,University Medical Center Groningen,instelling
-https://ror.org/02d9ce178,Maastricht University Medical Centre,instelling
-https://ror.org/0575yy874,University Medical Center Utrecht,instelling
-https://ror.org/043c0p156,Royal Netherlands Academy of Arts and Sciences,instelling
-https://ror.org/04jsz6e67,Dutch Research Council,instelling
-https://ror.org/00rbjv475,Netherlands eScience Center,instelling
-https://ror.org/009vhk114,SURF,instelling
+https://ror.org/04dkp9463,University of Amsterdam,Universities
+https://ror.org/008xxew50,Vrije Universiteit Amsterdam,Universities
+https://ror.org/02e2c7k09,Delft University of Technology,Universities
+https://ror.org/02c2kyt77,Eindhoven University of Technology,Universities
+https://ror.org/012p63287,University of Groningen,Universities
+https://ror.org/02jz4aj89,Maastricht University,Universities
+https://ror.org/016xsfp80,Radboud University Nijmegen,Universities
+https://ror.org/04b8v1s79,Tilburg University,Universities
+https://ror.org/006hf6230,University of Twente,Universities
+https://ror.org/04pp8hn57,Utrecht University,Universities
+https://ror.org/04qw24q55,Wageningen University & Research,Universities
+https://ror.org/057w15z03,Erasmus University Rotterdam,Universities
+https://ror.org/027bh9e22,Leiden University,Universities
+https://ror.org/018dfmf50,Open University of the Netherlands,Universities
+https://ror.org/05grdyy37,Amsterdam University Medical Centers,Umc's
+https://ror.org/018906e22,Erasmus MC,Umc's
+https://ror.org/05xvt9f17,Leiden University Medical Center,Umc's
+https://ror.org/05wg1m734,Radboud University Medical Center,Umc's
+https://ror.org/03cv38k47,University Medical Center Groningen,Umc's
+https://ror.org/02d9ce178,Maastricht University Medical Centre,Umc's
+https://ror.org/0575yy874,University Medical Center Utrecht,Umc's
+https://ror.org/043c0p156,Royal Netherlands Academy of Arts and Sciences,Research
+https://ror.org/04jsz6e67,Dutch Research Council,Research
+https://ror.org/00rbjv475,Netherlands eScience Center,Research
+https://ror.org/03g5hcd33,Integral Cancer Centre of the Netherlands,Research
+https://ror.org/05dfgh554,KNMI,Research
+,Naturalis Biodiversity Centre,Research
+https://ror.org/04s2z4291,Netherlands Forensic Institute,Research
+https://ror.org/052x1hs80,PBL Netherlands Environmental Assessment Agency,Research
+https://ror.org/01cesdt21,RIVM,Research
+https://ror.org/01yaj9a77,ZonMw,Research
+https://ror.org/009vhk114,SURF,Other
+https://ror.org/02w4jbg70,Royal Library,Other
+https://ror.org/0546dmt59,National Archives,Other
+https://ror.org/01htwz965,Police Academy,Other
+,SIVON,Other
+https://ror.org/01bnjb948,TNO,Other
+https://ror.org/04w5ec154,University for Humanistics,Other
+https://ror.org/03jnx2c74,Aeres University College,Colleges
+https://ror.org/04dde1554,Amsterdam School of the Arts,Colleges
+,ArtEZ University for the Arts,Colleges
+,Avans University of Applied Sciences,Colleges
+https://ror.org/04mfj5474,Breda University of Applied Sciences,Colleges
+https://ror.org/04vtvrr13,Codarts Rotterdam,Colleges
+https://ror.org/04tj5wz42,Ede University of Applied Sciences,Colleges
+https://ror.org/021zvq422,The Hague University of Applied Sciences,Colleges
+https://ror.org/039vq9023,Design Academy Eindhoven,Colleges
+https://ror.org/05jext738,Driestar University of Applied Sciences,Colleges
+https://ror.org/01jwcme05,Fontys Universities of Applied Sciences,Colleges
+,Gerrit Rietveld Academie,Colleges
+https://ror.org/00xqtxw43,Groningen University of Applied Sciences,Colleges
+https://ror.org/05p706d77,HAS University of Applied Sciences,Colleges
+https://ror.org/047cqa323,HZ University of Applied Sciences,Colleges
+https://ror.org/056k6yz11,Kempel University of Applied Sciences,Colleges
+,University of the Arts The Hague,Colleges
+https://ror.org/03cfsyg37,University of Applied Sciences Inholland,Colleges
+https://ror.org/0230zs006,University of Applied Sciences iPabo,Colleges
+https://ror.org/05nrjb178,KPZ University of Applied Sciences,Colleges
+https://ror.org/0093src13,University of Applied Sciences Leiden,Colleges
+https://ror.org/0481e1q24,University of Applied Sciences Rotterdam,Colleges
+https://ror.org/028z9kw20,University of Applied Sciences Utrecht,Colleges
+,University of Applied Sciences Amsterdam,Colleges
+,University of Arnhem and Nijmegen,Colleges
+https://ror.org/02ar29j81,University of Applied Sciences Viaa,Colleges
+,Utrecht School of the Arts,Colleges
+https://ror.org/018t8yw14,Hotelschool The Hague,Colleges
+,Iselinge University of Applied Sciences,Colleges
+https://ror.org/03xws5b35,Marnix Academy,Colleges
+https://ror.org/02xgxme97,NHL Stenden University of Applied Sciences,Colleges
+https://ror.org/005t9n460,Saxion,Colleges
+,Thomas More University of Applied Sciences,Colleges
+https://ror.org/02mdbnd10,Van Hall Larenstein University of Applied Sciences,Colleges
+https://ror.org/04zmc0e16,Windesheim,Colleges
+https://ror.org/02m6k0m40,Zuyd University of Applied Sciences,Colleges
+,Aeres Group (Groenhorst College),Mbo
+,Albeda College,Mbo
+,Christian Education Group Vallei & Gelderland-Midden,Mbo
+,CIBAP School of Design,Mbo
+https://ror.org/00e39jm60,Curio,Mbo
+,Da Vinci College,Mbo
+,DCTerra,Mbo
+,De Rooi Pannen,Mbo
+,Deltion College,Mbo
+,Firda,Mbo
+,Gilde Opleidingen,Mbo
+,Graafschap College,Mbo
+,Graphic Lyceum Rotterdam,Mbo
+,Graphic Lyceum Utrecht,Mbo
+,Wood and Furnishings College,Mbo
+,Willem I College,Mbo
+,Landstede MBO,Mbo
+,Leiden Instrumentation School,Mbo
+,Lentiz Onderwijsgroep,Mbo
+,MBO Amersfoort,Mbo
+,MBO Utrecht,Mbo
+,MBO Rhineland,Mbo
+,Media College Amsterdam,Mbo
+,Nimeto Utrecht,Mbo
+,Noorderpoort,Mbo
+,RBO Scholen,Mbo
+,ROC Alfa-college,Mbo
+,ROC Aventus,Mbo
+,ROC Central Netherlands,Mbo
+,ROC Mondriaan,Mbo
+,ROC Nijmegen,Mbo
+,ROC Nova College,Mbo
+,ROC Rivor,Mbo
+,ROC van Amsterdam-Flevoland,Mbo
+,ROC of Twente,Mbo
+,Rhine IJssel,Mbo
+,Scalda,Mbo
+,SintLucas,Mbo
+,SOMA College,Mbo
+,STC Group,Mbo
+,SVO Foundation for Vocational Education,Mbo
+,Summa College,Mbo
+,Talland College,Mbo
+,Ter AA,Mbo
+,Vista College,Mbo
+,Vonk,Mbo
+,Yonder,Mbo
+,Yuverta,Mbo
+,Zadkine,Mbo
+,Zone.College,Mbo
