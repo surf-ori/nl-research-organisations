@@ -18,6 +18,7 @@ Both files are committed to this repository so you can use them without running 
 | OpenAlex | `openalex_institution_id` | Yes (needs API key) |
 | OpenAIRE | `openaire_org_id`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
+| DUO HO/MBO address lists | `is_ho_institution`/`ho_instellingscode`, `is_mbo_institution`/`mbo_instellingscode` | Yes (public JSON dumps, no key needed) |
 | SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
 | ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; unverified against the live API — see `src/alei_fetcher.py`) |
 | EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) |
@@ -111,6 +112,10 @@ Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data →
 | `alei_id` | ALEI/KVK | string (empty) |
 | `pic_id` | EU PIC, falls back to OpenAIRE | string (empty) |
 | `is_barcelona_signatory` | Barcelona Decl. | bool |
+| `is_ho_institution` | DUO HO address list (exact name/alias match) | bool |
+| `ho_instellingscode` | DUO HO address list | string |
+| `is_mbo_institution` | DUO MBO address list (exact name/alias match) | bool |
+| `mbo_instellingscode` | DUO MBO address list | string |
 | `is_surf_member` | curated | bool |
 | `surf_member_type` | curated | string |
 | `is_ukb` | curated | bool |
@@ -137,4 +142,4 @@ See `agents.md` for the full module contract.
 
 ## License
 
-MIT
+[European Union Public Licence (EUPL) v1.2](https://eupl.eu/1.2/en/) — see `LICENSE`.

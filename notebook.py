@@ -38,9 +38,10 @@ def shared_state(Path, json):
         "zenodo":      {"label": "Zenodo Baseline", "source_url": "https://zenodo.org/records/18957154",            "placeholder": False},
         "openalex":    {"label": "OpenAlex",        "source_url": "https://api.openalex.org/institutions",          "placeholder": False},
         "openaire":    {"label": "OpenAIRE",        "source_url": "https://api.openaire.eu/graph/v1/organizations", "placeholder": False},
-        "alei":        {"label": "ALEI / KVK",      "source_url": "https://developers.kvk.nl/documentation",        "placeholder": True},
-        "pic":         {"label": "EU PIC",          "source_url": "https://ec.europa.eu/info/funding-tenders/",     "placeholder": True},
+        "alei":        {"label": "ALEI / KVK",      "source_url": "https://overheid.io/documentatie/openkvk",       "placeholder": False},
+        "pic":         {"label": "EU PIC",          "source_url": "https://ec.europa.eu/info/funding-tenders/",     "placeholder": False},
         "barcelona":   {"label": "Barcelona Decl.", "source_url": "https://barcelona-declaration.org",              "placeholder": False},
+        "duo":         {"label": "DUO HO/MBO",      "source_url": "https://data.overheid.nl/dataset/adressen_ho",   "placeholder": False},
         "memberships": {"label": "Memberships",     "source_url": "data/curated/",                                  "placeholder": False},
         "nbn":         {"label": "NBN Prefixes",    "source_url": "https://www.kb.nl/.../nbn-catalogus",            "placeholder": False},
         "assembler":   {"label": "Assembly",        "source_url": "data/nl_research_orgs.parquet",                  "placeholder": False},
@@ -322,7 +323,8 @@ def full_refresh(full_refresh_btn, mo):
         log_lines = []
         _stages = [
             "src.ror_fetcher", "src.zenodo_baseline", "src.openalex", "src.openaire",
-            "src.alei_fetcher", "src.pic_fetcher", "src.barcelona", "src.memberships", "src.nbn_fetcher", "src.assembler",
+            "src.alei_fetcher", "src.pic_fetcher", "src.barcelona", "src.duo_ho_mbo",
+            "src.memberships", "src.nbn_fetcher", "src.assembler",
         ]
         for _mod in mo.status.progress_bar(
             _stages, title="Full Refresh", subtitle="Running all pipeline stages…", remove_on_exit=False,
@@ -363,7 +365,7 @@ def pipeline_section(
     _STAGE_MODULES = {
         "ror": "src.ror_fetcher", "zenodo": "src.zenodo_baseline",
         "alei": "src.alei_fetcher", "pic": "src.pic_fetcher",
-        "nbn": "src.nbn_fetcher",
+        "duo": "src.duo_ho_mbo", "nbn": "src.nbn_fetcher",
     }
 
     def _refresh_fn(stage, label):

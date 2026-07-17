@@ -32,9 +32,10 @@ def _(force, mo, source):
         "ror": ("src.ror_fetcher", []),
         "zenodo": ("src.zenodo_baseline", []),
         "barcelona": ("src.barcelona", []),
+        "duo": ("src.duo_ho_mbo", []),
         "memberships": ("src.memberships", []),
     }
-    ORDER = ["ror", "zenodo", "openalex", "openaire", "alei", "pic", "barcelona", "memberships", "assemble"]
+    ORDER = ["ror", "zenodo", "openalex", "openaire", "alei", "pic", "barcelona", "duo", "memberships", "assemble"]
 
     to_run = ORDER if source == "all" else [source]
     results = {}
