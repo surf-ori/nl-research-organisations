@@ -18,7 +18,7 @@ with app.setup:
 
     import pandas as pd
 
-    # Output paths and the canonical 43-column order for the assembled dataset
+    # Output paths and the canonical 47-column order for the assembled dataset
     RAW_DIR    = Path("data/raw")
     CURATED_DIR = Path("data/curated")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
@@ -35,6 +35,8 @@ with app.setup:
         "alei_id", "pic_id",
         "nbn_prefix",
         "is_barcelona_signatory",
+        "is_ho_institution", "ho_instellingscode",
+        "is_mbo_institution", "mbo_instellingscode",
         "is_surf_member", "surf_member_type",
         "is_ukb", "is_shb", "is_unl", "is_umcnl", "is_vh",
         "is_knaw_institute", "is_nwoi_institute", "is_openaire_member",
@@ -43,7 +45,7 @@ with app.setup:
 
 @app.function
 def fetch(force_refresh: bool = False) -> dict:
-    """Assemble all pipeline stage outputs into a single 43-column Parquet + CSV dataset.
+    """Assemble all pipeline stage outputs into a single 47-column Parquet + CSV dataset.
 
     Imports load_* from every pipeline stage module, joins on ror_id_url, and writes
     OUT_PARQUET and OUT_CSV. Local imports prevent circular dependencies at module level.
@@ -58,6 +60,7 @@ def fetch(force_refresh: bool = False) -> dict:
     from src.alei_fetcher  import load_results as load_alei
     from src.pic_fetcher   import load_results as load_pic
     from src.barcelona     import load_results as load_barcelona
+    from src.duo_ho_mbo    import load_results as load_duo
     from src.memberships   import load_memberships
     from src.nbn_fetcher   import load_results as load_nbn
 
@@ -77,6 +80,7 @@ def fetch(force_refresh: bool = False) -> dict:
     alei         = load_alei()
     pic          = load_pic()
     barcelona    = load_barcelona(orgs)
+    duo          = load_duo(orgs)
     memberships  = load_memberships(ror_urls)
     nbn          = load_nbn()
 
@@ -87,6 +91,7 @@ def fetch(force_refresh: bool = False) -> dict:
         # OpenAIRE's pids array duplicates some ROR-native identifiers and adds several
         # others; used as a fallback wherever ROR itself doesn't already supply a value
         oa_ids = openaire_ids.get(url, {})
+        duo_match = duo.get(url, {})
         rows.append({
             "name":                    org.get("name"),
             "acronym":                 org.get("acronym"),
@@ -121,6 +126,10 @@ def fetch(force_refresh: bool = False) -> dict:
             "pic_id":                  pic.get(url) or oa_ids.get("pic_id") or "",
             "nbn_prefix":              nbn.get(url, ""),
             "is_barcelona_signatory":  barcelona.get(url, False),
+            "is_ho_institution":       duo_match.get("is_ho_institution", False),
+            "ho_instellingscode":      duo_match.get("ho_instellingscode"),
+            "is_mbo_institution":      duo_match.get("is_mbo_institution", False),
+            "mbo_instellingscode":     duo_match.get("mbo_instellingscode"),
             "is_surf_member":          m.get("is_surf_member", False),
             "surf_member_type":        m.get("surf_member_type"),
             "is_ukb":                  m.get("is_ukb", False),
@@ -154,7 +163,7 @@ def header():
     mo.md("""
     ## Assembler — Dataset Assembly
 
-    Joins all pipeline stage outputs into a single 43-column dataset:
+    Joins all pipeline stage outputs into a single 47-column dataset:
 
     - **Input**: cached JSON/CSV files produced by each `src/*.py` stage
     - **Output**: `data/nl_research_orgs.parquet` and `data/nl_research_orgs.csv`
