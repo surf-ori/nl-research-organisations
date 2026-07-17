@@ -329,11 +329,15 @@ def full_refresh(full_refresh_btn, mo):
         ):
             try:
                 m = importlib.import_module(_mod)
-                # openalex and openaire need the ROR URL list as input
+                # openalex and openaire need the ROR URL list as input; pic and alei
+                # search by organisation name, so they need the full org dicts instead
                 if _mod in ("src.openalex", "src.openaire"):
                     rf = importlib.import_module("src.ror_fetcher")
                     ror_urls = [o["ror_id_url"] for o in rf.load_orgs()]
                     r = m.fetch(ror_urls, force_refresh=True)
+                elif _mod in ("src.pic_fetcher", "src.alei_fetcher"):
+                    rf = importlib.import_module("src.ror_fetcher")
+                    r = m.fetch(rf.load_orgs(), force_refresh=True)
                 else:
                     r = m.fetch(force_refresh=True)
                 log_lines.append(f"✓ {_mod.split('.')[-1]}: {r.get('record_count', '?')} records")
@@ -372,6 +376,10 @@ def pipeline_section(
                         rf = _il.import_module("src.ror_fetcher")
                         ror_urls = [o["ror_id_url"] for o in rf.load_orgs()]
                         result = m.fetch(ror_urls, force_refresh=True)
+                    elif stage in ("pic", "alei"):
+                        # PIC and ALEI/KVK search by organisation name, not ROR ID
+                        rf = _il.import_module("src.ror_fetcher")
+                        result = m.fetch(rf.load_orgs(), force_refresh=True)
                     else:
                         result = m.fetch(force_refresh=True)
                 set_refresh_results(lambda d, r=result, s=stage: {**d, s: r})

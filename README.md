@@ -19,8 +19,8 @@ Both files are committed to this repository so you can use them without running 
 | OpenAIRE | `openaire_org_id`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
 | SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
-| ALEI / KVK | `alei_id` | Placeholder |
-| EU PIC | `pic_id` | Placeholder |
+| ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; unverified against the live API — see `src/alei_fetcher.py`) |
+| EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) |
 
 ## Quickstart
 
@@ -61,6 +61,15 @@ cp .env.example .env
 ```
 
 See `.env.example` for all available options including LLM provider configuration.
+All keys are optional — every stage runs and reports zero new records without its
+key rather than failing.
+
+| Variable(s) | Stage | How to obtain |
+|---|---|---|
+| `OPENALEX_API_KEY`, `OPENALEX_MAILTO` | OpenAlex | No signup — a `mailto` is enough to join OpenAlex's ["polite pool"](https://docs.openalex.org/how-to-use-the-api/rate-limits-and-authentication) for higher rate limits. An API key is only needed for premium/higher-volume access. |
+| `OPENAIRE_CLIENT_ID`, `OPENAIRE_CLIENT_SECRET` | OpenAIRE | Optional — the Graph API is public without auth, at a lower rate limit. Register an application at the [OpenAIRE APIs & SDKs portal](https://graph.openaire.eu/docs/apis-sdks/graph-api/get-started/authentication) for a `client_credentials` pair. |
+| `EU_LOGIN_CLIENT_ID`, `EU_LOGIN_CLIENT_SECRET` | EU PIC | Requires an [EU Login](https://webgate.ec.europa.eu/cas/eim/external/register.cgi) account with **Participant Register API** access, granted through your organisation's LEAR (Legal Entity Appointed Representative) or your project coordinator — see the [Funding & Tenders Participant Register](https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/how-to-participate/participant-register) and the [API webservices docs](https://webgate.ec.europa.eu/funding-tenders-opportunities/display/OM/Webservices). This module is unverified against the live API — see `src/pic_fetcher.py`'s docstring. |
+| `OVERHEID_IO_API_KEY` | ALEI / KVK | Free account at [overheid.io/register](https://overheid.io/register); generate a key from your dashboard. Docs: [overheid.io/documentatie/openkvk](https://overheid.io/documentatie/openkvk). This module is unverified against the live API — see `src/alei_fetcher.py`'s docstring. |
 
 ## Updating membership lists
 
