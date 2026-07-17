@@ -136,9 +136,12 @@ Every `src/*.py` stage is a marimo notebook that also works as a Python module. 
   though they are real HO/MBO institutions. This is deliberate: an earlier
   fuzzy-matching attempt produced confident-looking false positives between unrelated
   institutions sharing a generic suffix (e.g. "X University of Applied Sciences").
-  Missing matches are safer than wrong ones, but this means `is_ho_institution`/
-  `is_mbo_institution` should be read as "confirmed match found", not "definitely not
-  an HO/MBO institution" when `False`.
+  Missing matches are safer than wrong ones, but this means `is_duo_institute`
+  should be read as "confirmed match found", not "definitely not an HO/MBO
+  institution" when `False`. HO and MBO matches are combined into one set of
+  `duo_*` columns (no ROR org has been found in both lists) — `duo_institute_type`
+  carries the HO ("SOORT HO") or MBO ("MBO INSTELLINGSSOORT - CODE") type code
+  as-is, so which vocabulary a value belongs to still tells you HO vs MBO.
 - **OpenAIRE credentials** are optional but recommended for volume; without them the
   public (lower rate limit) endpoint is used automatically
 - **Membership CSVs** are seeded with known data as of 2026-06 — use LLM auto-update or manual editing to keep them current

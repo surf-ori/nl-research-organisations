@@ -1,12 +1,13 @@
 {
   "title": "NL Research Organisations",
-  "description": "<p>A reference table of all research organisations in the Kingdom of the Netherlands (NL, AW, CW, SX, BQ), assembled from the Research Organization Registry (ROR) and enriched with identifiers from OpenAlex, OpenAIRE, the Barcelona Declaration on Open Research Information, DUO's official higher-education/vocational-education address lists, EU PIC, ALEI/KVK, and curated Dutch consortium/membership lists (SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE).</p><p>Feeds the Dutch Open Research Information data lake.</p>",
+  "description": "<p>A reference table of all research organisations in the Kingdom of the Netherlands (NL, AW, CW, SX, BQ), assembled from the Research Organization Registry (ROR) and enriched with identifiers from OpenAlex, OpenAIRE, the Barcelona Declaration on Open Research Information, DUO's official higher-education/vocational-education address lists, EU PIC, ALEI/KVK, and curated Dutch consortium/membership lists (SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE).</p><p>Feeds the Dutch Open Research Information data lake.</p><p>Live, browsable view: <a href=\"https://surf-ori.github.io/nl-research-organisations/\">https://surf-ori.github.io/nl-research-organisations/</a></p>",
   "upload_type": "dataset",
   "access_right": "open",
   "license": "EUPL-1.2",
   "creators": [
     {
       "name": "Vanderfeesten, Maurice",
+      "orcid": "0000-0001-6397-4759",
       "affiliation": "SURF"
     }
   ],
@@ -25,6 +26,11 @@
     {
       "identifier": "https://github.com/surf-ori/nl-research-organisations",
       "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://surf-ori.github.io/nl-research-organisations/",
+      "relation": "isSupplementedBy",
       "scheme": "url"
     },
     {

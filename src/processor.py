@@ -102,6 +102,23 @@ with app.setup:
         field_ids = [f["id"] for f in data.get("fields", [])]
         return pd.DataFrame(data.get("records", []), columns=field_ids)
 
+    def _read_duo_institutes() -> pd.DataFrame:
+        """Combine the HO and MBO dumps into one table, tagged by source list —
+        matching src/duo_ho_mbo.py's combined is_duo_institute/duo_institute_type
+        columns in the assembled output. HO and MBO use different type-code
+        vocabularies ("SOORT HO" vs "MBO INSTELLINGSSOORT - CODE"), so both stay as
+        separate columns here; only duo_list distinguishes which dump a row is from.
+        """
+        ho = _read_duo_dump("ho.json")
+        if not ho.empty:
+            ho = ho.copy()
+            ho.insert(0, "duo_list", "HO")
+        mbo = _read_duo_dump("mbo.json")
+        if not mbo.empty:
+            mbo = mbo.copy()
+            mbo.insert(0, "duo_list", "MBO")
+        return pd.concat([ho, mbo], ignore_index=True)
+
     def _copy_meta(stage: str, name: str) -> None:
         """Copy a stage's raw _metadata.json into data/processed/<name>_metadata.json."""
         src = RAW_DIR / stage / "_metadata.json"
@@ -161,8 +178,7 @@ def fetch(force_refresh: bool = False) -> dict:
         total += _write_parquet("barcelona", pd.read_csv(barcelona_csv))
     _copy_meta("barcelona", "barcelona")
 
-    total += _write_parquet("duo_ho", _read_duo_dump("ho.json"))
-    total += _write_parquet("duo_mbo", _read_duo_dump("mbo.json"))
+    total += _write_parquet("duo_institutes", _read_duo_institutes())
     _copy_meta("duo", "duo")
 
     _copy_meta("nbn", "nbn")

@@ -93,6 +93,6 @@ def test_assemble_produces_parquet(tmp_path, ror_page_nl):
         "https://explore.openaire.eu/search/advanced/organizations?f0=pid&fv0="
         "https%253A%252F%252Fror.org%252F04dkp9463"
     )
-    for col in ["ho_straatnaam", "ho_huisnummer", "ho_postcode", "ho_plaatsnaam",
-                "mbo_straatnaam", "mbo_huisnummer", "mbo_postcode", "mbo_plaatsnaam"]:
+    for col in ["is_duo_institute", "duo_institution_code", "duo_institute_type",
+                "duo_straatnaam", "duo_huisnummer", "duo_postcode", "duo_plaatsnaam"]:
         assert col in df.columns

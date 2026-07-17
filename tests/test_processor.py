@@ -91,7 +91,7 @@ def test_fetch_flattens_alei_matches(tmp_path):
     assert df.iloc[0]["dossiernummer"] == "41208034"
 
 
-def test_fetch_reads_duo_dump_format(tmp_path):
+def test_fetch_combines_ho_and_mbo_dumps_into_one_parquet(tmp_path):
     raw = tmp_path / "raw"
     processed = tmp_path / "processed"
     curated = tmp_path / "curated"
@@ -101,6 +101,10 @@ def test_fetch_reads_duo_dump_format(tmp_path):
     (raw / "duo" / "ho.json").write_text(json.dumps({
         "fields": [{"id": "INSTELLINGSNAAM"}, {"id": "INSTELLINGSCODE"}],
         "records": [["Vrije Universiteit Amsterdam", "21160"]],
+    }))
+    (raw / "duo" / "mbo.json").write_text(json.dumps({
+        "fields": [{"id": "INSTELLINGSNAAM"}, {"id": "INSTELLINGSCODE"}],
+        "records": [["SOMA College", "04NZ"]],
     }))
 
     import src.processor
@@ -115,9 +119,10 @@ def test_fetch_reads_duo_dump_format(tmp_path):
         from src.processor import fetch
         fetch()
 
-    assert (processed / "duo_ho.parquet").exists()
-    df = pd.read_parquet(processed / "duo_ho.parquet")
-    assert df.iloc[0]["INSTELLINGSNAAM"] == "Vrije Universiteit Amsterdam"
+    assert (processed / "duo_institutes.parquet").exists()
+    df = pd.read_parquet(processed / "duo_institutes.parquet")
+    assert set(df["duo_list"]) == {"HO", "MBO"}
+    assert set(df["INSTELLINGSNAAM"]) == {"Vrije Universiteit Amsterdam", "SOMA College"}
 
 
 def test_fetch_skips_missing_sources_without_error(tmp_path):

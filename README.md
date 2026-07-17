@@ -19,10 +19,10 @@ Both files are committed to this repository so you can use them without running 
 |--------|----------|------------|
 | ROR API | 20 base columns per organisation | Yes |
 | Zenodo ORI baseline | `ori_base_org` flag | Yes |
-| OpenAlex | `openalex_institution_id` | Yes (needs API key) |
-| OpenAIRE | `openaire_org_id`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
+| OpenAlex | `openalex_institution_id`/`openalex_institution_id_url` | Yes (needs API key) |
+| OpenAIRE | `openaire_org_id`/`openaire_org_id_url`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
-| DUO HO/MBO address lists | `is_ho_institution`/`ho_instellingscode`, `is_mbo_institution`/`mbo_instellingscode` | Yes (public JSON dumps, no key needed) |
+| DUO HO/MBO address lists | `is_duo_institute`/`duo_institution_code`/`duo_institute_type`/`duo_straatnaam`/`duo_huisnummer`/`duo_postcode`/`duo_plaatsnaam` (HO and MBO combined — no ROR org matches both lists) | Yes (public JSON dumps, no key needed) |
 | SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
 | ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; verified against the live API — see `src/alei_fetcher.py`) |
 | EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) |
@@ -125,14 +125,19 @@ Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data →
 | `mag_id` | OpenAIRE (Microsoft Academic Graph) | string |
 | `ori_base_org` | Zenodo | bool |
 | `openalex_institution_id` | OpenAlex | string |
+| `openalex_institution_id_url` | OpenAlex | string |
 | `openaire_org_id` | OpenAIRE | string |
+| `openaire_org_id_url` | OpenAIRE org-search URL, falls back to a ROR-filtered OpenAIRE Explore search when there's no `openaire_org_id` | string |
 | `alei_id` | ALEI/KVK | string (empty) |
 | `pic_id` | EU PIC, falls back to OpenAIRE | string (empty) |
 | `is_barcelona_signatory` | Barcelona Decl. | bool |
-| `is_ho_institution` | DUO HO address list (exact name/alias match) | bool |
-| `ho_instellingscode` | DUO HO address list | string |
-| `is_mbo_institution` | DUO MBO address list (exact name/alias match) | bool |
-| `mbo_instellingscode` | DUO MBO address list | string |
+| `is_duo_institute` | DUO HO/MBO address lists (exact name/alias match; HO and MBO combined) | bool |
+| `duo_institution_code` | DUO HO/MBO address lists | string |
+| `duo_institute_type` | DUO HO/MBO address lists (HO's "SOORT HO" or MBO's "MBO INSTELLINGSSOORT - CODE" — different vocabularies, so the value itself tells you which) | string |
+| `duo_straatnaam` | DUO HO/MBO address lists | string |
+| `duo_huisnummer` | DUO HO/MBO address lists (combined house number + addition, e.g. "12a") | string |
+| `duo_postcode` | DUO HO/MBO address lists | string |
+| `duo_plaatsnaam` | DUO HO/MBO address lists | string |
 | `is_surf_member` | curated | bool |
 | `surf_member_type` | curated | string |
 | `is_ukb` | curated | bool |
