@@ -1,6 +1,10 @@
 # NL Research Organisations
 
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.21416468.svg)](https://doi.org/10.5281/zenodo.21416468)
+
 A marimo notebook that builds and maintains a comprehensive reference table of all research organisations in the Kingdom of the Netherlands (NL, AW, CW, SX, BQ), enriched with identifiers from multiple databases.
+
+Archived on Zenodo: [10.5281/zenodo.21416468](https://doi.org/10.5281/zenodo.21416468) (always resolves to the latest version).
 
 ## What it produces
 
