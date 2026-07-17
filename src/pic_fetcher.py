@@ -22,7 +22,7 @@ Required .env key: EU_PIC_API_KEY
 import marimo
 
 __generated_with = "0.23.10"
-app = marimo.App(width="wide")
+app = marimo.App(width="full")
 
 
 with app.setup:
