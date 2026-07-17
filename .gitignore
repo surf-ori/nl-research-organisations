@@ -1,5 +1,12 @@
 .env
-data/raw/
+__marimo__/
+apps/public/
+data/raw/*
+!data/raw/*/
+data/raw/*/*
+!data/raw/*/_metadata.json
+!data/raw/_assembly_metadata.json
+!data/raw/.gitkeep
 __pycache__/
 *.pyc
 .pytest_cache/

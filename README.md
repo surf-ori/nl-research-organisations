@@ -28,6 +28,23 @@ Both files are committed to this repository so you can use them without running 
 uvx marimo run notebook.py
 ```
 
+## Published read-only app
+
+A read-only snapshot of the Dashboard and Dataset Preview is published to GitHub Pages on
+every push to `master`, via `.github/workflows/deploy-pages.yml`. It's a separate,
+WASM-exportable notebook (`apps/dashboard.py`) that only reads the data already committed
+to `data/curated/` and `data/nl_research_orgs.parquet` — no refresh/save buttons, no
+external API calls, no LLM configuration. To preview it locally:
+
+```bash
+bash apps/build_public.sh   # copies data/ + assets/ into apps/public/
+uvx marimo run apps/dashboard.py
+```
+
+For the interactive curation tool (refreshing sources, editing membership lists), use
+`notebook.py` as described above — that one has to run locally since it writes to disk
+and calls external APIs that a static GitHub Pages site can't support.
+
 ## Headless / CLI
 
 ```bash
