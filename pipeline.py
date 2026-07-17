@@ -33,8 +33,6 @@ def _(force, mo, source):
         "zenodo": ("src.zenodo_baseline", []),
         "barcelona": ("src.barcelona", []),
         "memberships": ("src.memberships", []),
-        "alei": ("src.alei_fetcher", []),
-        "pic": ("src.pic_fetcher", []),
     }
     ORDER = ["ror", "zenodo", "openalex", "openaire", "alei", "pic", "barcelona", "memberships", "assemble"]
 
@@ -58,6 +56,20 @@ def _(force, mo, source):
                 ror_urls = [o["ror_id_url"] for o in orgs]
                 m = importlib.import_module("src.openaire")
                 result = m.fetch(ror_urls, force_refresh=force)
+            elif stage == "pic":
+                # PIC's search endpoint matches by organisation name, not ROR ID
+                import importlib
+                mod = importlib.import_module("src.ror_fetcher")
+                orgs = mod.load_orgs()
+                m = importlib.import_module("src.pic_fetcher")
+                result = m.fetch(orgs, force_refresh=force)
+            elif stage == "alei":
+                # OpenKvK's search endpoint matches by organisation name, not ROR ID
+                import importlib
+                mod = importlib.import_module("src.ror_fetcher")
+                orgs = mod.load_orgs()
+                m = importlib.import_module("src.alei_fetcher")
+                result = m.fetch(orgs, force_refresh=force)
             elif stage == "assemble":
                 import importlib
                 m = importlib.import_module("src.assembler")
