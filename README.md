@@ -16,7 +16,7 @@ Both files are committed to this repository so you can use them without running 
 | ROR API | 20 base columns per organisation | Yes |
 | Zenodo ORI baseline | `ori_base_org` flag | Yes |
 | OpenAlex | `openalex_institution_id` | Yes (needs API key) |
-| OpenAIRE | `openaire_org_id` | Yes (needs refresh token) |
+| OpenAIRE | `openaire_org_id`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
 | SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
 | ALEI / KVK | `alei_id` | Placeholder |
@@ -85,15 +85,22 @@ Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data →
 | `geonames_id` | ROR | int |
 | `website_url` | ROR | string |
 | `wikipedia_url` | ROR | string |
-| `isni_id` | ROR | string |
-| `wikidata_id` | ROR | string |
-| `grid_id` | ROR | string |
-| `fundref_id` | ROR | string |
+| `isni_id` | ROR, falls back to OpenAIRE | string |
+| `wikidata_id` | ROR, falls back to OpenAIRE | string |
+| `grid_id` | ROR, falls back to OpenAIRE | string |
+| `fundref_id` | ROR, falls back to OpenAIRE | string |
+| `viaf_id` | OpenAIRE | string |
+| `ringgold_id` | OpenAIRE | string |
+| `orgref_id` | OpenAIRE | string |
+| `orgreg_id` | OpenAIRE | string |
+| `rrid_id` | OpenAIRE | string |
+| `linkedin_url` | OpenAIRE | string |
+| `mag_id` | OpenAIRE (Microsoft Academic Graph) | string |
 | `ori_base_org` | Zenodo | bool |
 | `openalex_institution_id` | OpenAlex | string |
 | `openaire_org_id` | OpenAIRE | string |
 | `alei_id` | ALEI/KVK | string (empty) |
-| `pic_id` | EU PIC | string (empty) |
+| `pic_id` | EU PIC, falls back to OpenAIRE | string (empty) |
 | `is_barcelona_signatory` | Barcelona Decl. | bool |
 | `is_surf_member` | curated | bool |
 | `surf_member_type` | curated | string |
