@@ -6,3 +6,10 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 dist/
+
+# data/raw/ is bronze — reproducible any time via each stage's fetch(), and too big/
+# slow (thousands of small per-org files) to be worth committing. data/processed/
+# (silver, via src/processor.py) and data/curated/ (hand-authored) are committed.
+data/raw/**
+!data/raw/**/
+!data/raw/**/.gitkeep

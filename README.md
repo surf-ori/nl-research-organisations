@@ -20,8 +20,21 @@ Both files are committed to this repository so you can use them without running 
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
 | DUO HO/MBO address lists | `is_ho_institution`/`ho_instellingscode`, `is_mbo_institution`/`mbo_instellingscode` | Yes (public JSON dumps, no key needed) |
 | SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
-| ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; unverified against the live API — see `src/alei_fetcher.py`) |
+| ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; verified against the live API — see `src/alei_fetcher.py`) |
 | EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) |
+
+## Data layout
+
+- `data/raw/` — bronze, one subdirectory per source. **Gitignored** (thousands of
+  small per-org files, too big/slow to commit) — reproducible any time via that
+  source's `fetch()`.
+- `data/processed/` — silver, one Parquet file per source, built by `src/processor.py`
+  from whatever's currently cached in `data/raw/` + `data/curated/`. Committed — this
+  is what both `notebook.py`'s Dataset Preview and the published dashboard actually
+  read.
+- `data/curated/*.csv` — hand/LLM-maintained membership lists. Committed; this is the
+  only copy.
+- `data/nl_research_orgs.parquet`/`.csv` — the final assembled output. Committed.
 
 ## Quickstart
 
@@ -34,11 +47,11 @@ uvx marimo run notebook.py
 A read-only snapshot of the Dashboard and Dataset Preview is published to GitHub Pages on
 every push to `master`, via `.github/workflows/deploy-pages.yml`. It's a separate,
 WASM-exportable notebook (`apps/dashboard.py`) that only reads the data already committed
-to `data/curated/` and `data/nl_research_orgs.parquet` — no refresh/save buttons, no
-external API calls, no LLM configuration. To preview it locally:
+to `data/processed/`, `data/curated/`, and `data/nl_research_orgs.parquet` — no
+refresh/save buttons, no external API calls, no LLM configuration. To preview it locally:
 
 ```bash
-bash apps/build_public.sh   # copies data/ + assets/ into apps/public/
+bash apps/build_public.sh   # copies data/{processed,curated,nl_research_orgs.*} + assets/ into apps/public/
 uvx marimo run apps/dashboard.py
 ```
 

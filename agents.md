@@ -50,23 +50,36 @@ Copy `.env.example` to `.env` and fill in values. See README.md's "API keys" tab
 
 ## Data file locations
 
-All of `data/raw/` is committed (~34MB) for transparency — anyone can inspect exactly
-what each stage fetched, via GitHub's file browser or a local clone. Only
-`__pycache__`, `.env`, `__marimo__/`, and `apps/public/` (a build artifact, see below)
-are gitignored.
+Four tiers:
+
+- **Bronze** (`data/raw/`) — raw API/webpage responses, one subdirectory per stage.
+  Gitignored (thousands of small files, ~34MB — too big/slow to commit) but
+  reproducible any time via that stage's `fetch()`. Each subdirectory keeps a
+  `.gitkeep` placeholder so the tree exists on a fresh clone.
+- **Silver** (`data/processed/`) — one Parquet file per source (`ror.parquet`,
+  `openalex.parquet`, `ukb_members.parquet`, ...), built by `src/processor.py` from
+  whatever's currently in `data/raw/` + `data/curated/`. Committed — small, uniform,
+  and what both `notebook.py`'s Dataset Preview and the published
+  `apps/dashboard.py` actually read (neither reads `data/raw/` directly — GitHub
+  Pages can't, and re-parsing thousands of raw files on every preview is slow). Each
+  source also gets `data/processed/<name>_metadata.json` (copied from that stage's
+  raw `_metadata.json`), which drives the freshness cards.
+- **Curated** (`data/curated/*.csv`) — hand/LLM-maintained membership lists.
+  Committed; this is the only copy, there's no upstream API to re-derive it from.
+- **Gold** (`data/nl_research_orgs.parquet`/`.csv`) — the final assembled output.
+  Committed.
+
+Only `__pycache__`, `.env`, `__marimo__/`, `apps/public/` (a build artifact, see
+below), and `data/raw/**` (bronze, see above) are gitignored.
 
 | File | Description |
 |------|-------------|
 | `data/nl_research_orgs.parquet` | Primary output — committed |
 | `data/nl_research_orgs.csv` | CSV copy — committed |
-| `data/raw/ror/page_<CC>_<NNN>.json` | ROR API page cache — committed |
-| `data/raw/openalex/<ror_id>.json` | OpenAlex per-org cache — committed |
-| `data/raw/openaire/<ror_id>.json` | OpenAIRE per-org cache — committed |
-| `data/raw/barcelona/signatories.csv` | Barcelona Declaration download — committed |
-| `data/raw/zenodo/nl-orgs-baseline.xlsx` | Zenodo baseline — committed |
-| `data/raw/duo/ho.json`, `data/raw/duo/mbo.json` | DUO HO/MBO address list dumps — committed |
+| `data/raw/<stage>/...` | Per-stage bronze cache — gitignored, regenerate via that stage's `fetch()` |
+| `data/processed/<name>.parquet` | Per-source silver snapshot — committed, built by `src/processor.py`'s `fetch()` |
+| `data/processed/<name>_metadata.json` | Fetch timestamp + record count per stage — committed |
 | `data/curated/*.csv` | Hand/LLM-maintained membership lists — committed |
-| `data/raw/*/_metadata.json`, `data/raw/_assembly_metadata.json` | Fetch timestamp + record count per stage — committed |
 | `apps/public/` | Built by `apps/build_public.sh` for the published app; gitignored, regenerated on every deploy |
 
 ## Module contract
@@ -98,16 +111,25 @@ Every `src/*.py` stage is a marimo notebook that also works as a Python module. 
 4. Add a stage card in `notebook.py`'s `STAGE_META` dict, and wire up its refresh handler
    in both `full_refresh` and `pipeline_section` if it needs `orgs`/`ror_urls` as input
 5. Add to `pipeline.py`'s `STAGES`/`ORDER` (and its `elif` dispatch if it needs `orgs`/`ror_urls`)
-6. Add a test module under `tests/` (mock `requests` calls; see `tests/test_barcelona.py`
+6. Wire it into `src/processor.py`'s `fetch()` so it gets a `data/processed/<name>.parquet`
+   silver snapshot — this is what Dataset Preview (both `notebook.py` and
+   `apps/dashboard.py`) actually reads, not `data/raw/` directly
+7. Add a test module under `tests/` (mock `requests` calls; see `tests/test_barcelona.py`
    or `tests/test_duo_ho_mbo.py`)
-7. Document in this file and README.md (data sources table, column reference, API keys table)
+8. Document in this file and README.md (data sources table, column reference, API keys table)
 
 ## Known limitations
 
-- **ALEI/KVK and PIC IDs**: both are implemented but **unverified against the live
-  API** — neither the requester nor the implementer has credentials for either
-  service. See the `ponytail:` note in each module's docstring before trusting their
-  output; verify request/response shapes the first time real credentials exist.
+- **ALEI/KVK**: verified against the live overheid.io API (2026-07) — see
+  `src/alei_fetcher.py`'s docstring. Coverage is low (roughly 6% of orgs matched) because
+  OpenKvK's search is a text match against Dutch legal entity names, which often differ
+  from a research organisation's public/brand name (e.g. "Vrije Universiteit Amsterdam"
+  is legally "Stichting VU") — the module tries the org's aliases as fallback queries,
+  but a curated legal-name list would likely raise coverage further.
+- **EU PIC**: implemented but **unverified against the live API** — the implementer
+  has no EU Login credentials to test with. See the `ponytail:` note in
+  `src/pic_fetcher.py`'s docstring before trusting its output; verify request/response
+  shapes the first time real credentials exist.
 - **DUO HO/MBO matching undercounts**: it only matches ROR orgs by *exact* name or
   alias against DUO's official (usually Dutch) institution names — many ROR orgs use
   an English display name with no matching Dutch alias, so they won't match even

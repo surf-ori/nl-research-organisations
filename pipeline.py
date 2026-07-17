@@ -34,8 +34,13 @@ def _(force, mo, source):
         "barcelona": ("src.barcelona", []),
         "duo": ("src.duo_ho_mbo", []),
         "memberships": ("src.memberships", []),
+        "nbn": ("src.nbn_fetcher", []),
+        "process": ("src.processor", []),
     }
-    ORDER = ["ror", "zenodo", "openalex", "openaire", "alei", "pic", "barcelona", "duo", "memberships", "assemble"]
+    ORDER = [
+        "ror", "zenodo", "openalex", "openaire", "alei", "pic", "barcelona", "duo",
+        "memberships", "nbn", "assemble", "process",
+    ]
 
     to_run = ORDER if source == "all" else [source]
     results = {}
