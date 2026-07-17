@@ -26,9 +26,13 @@ def imports():
 @app.cell(hide_code=True)
 def shared_state(Path, json):
     # Shared constants — paths and per-stage metadata used throughout the notebook
-    RAW_DIR = Path("data/raw")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
     CURATED_DIR = Path("data/curated")
+    # data/processed/ is the committed silver tier (src/processor.py) — freshness
+    # cards and Dataset Preview read from here rather than data/raw/ directly, since
+    # data/raw/ is gitignored (bronze, reproducible via fetch()) and this way local
+    # runs and a fresh clone behave the same.
+    PROCESSED_DIR = Path("data/processed")
     LOGO_PATH = Path("assets/surf-logo.svg")
 
     # One entry per pipeline stage: display label, canonical source URL, and
@@ -48,94 +52,57 @@ def shared_state(Path, json):
     }
 
     def read_meta(stage: str) -> dict | None:
-        # Read the cached _metadata.json for a pipeline stage; returns None if not yet run
-        p = RAW_DIR / stage / "_metadata.json"
-        if p.exists():
-            return json.loads(p.read_text())
-        # The assembler writes its metadata one level up
-        if stage == "assembler":
-            p2 = RAW_DIR / "_assembly_metadata.json"
-            if p2.exists():
-                return json.loads(p2.read_text())
-        return None
+        # Read the processed <stage>_metadata.json for a pipeline stage; returns None
+        # if src.processor.fetch() hasn't been run since that stage last fetched.
+        p = PROCESSED_DIR / f"{stage}_metadata.json"
+        return json.loads(p.read_text()) if p.exists() else None
 
-    return CURATED_DIR, LOGO_PATH, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
+    return CURATED_DIR, LOGO_PATH, OUT_PARQUET, PROCESSED_DIR, STAGE_META, read_meta
 
 
 @app.cell(hide_code=True)
-def preview_loaders(pd, json, OUT_PARQUET, CURATED_DIR, RAW_DIR):
-    # Preview loaders — one entry per pipeline dataset, used by the Dataset Preview dropdown
-    _CURATED_FILES = [
-        ("SURF Members (curated)",      "surf_members.csv"),
-        ("UKB (curated)",               "ukb_members.csv"),
-        ("SHB (curated)",               "shb_members.csv"),
-        ("UNL (curated)",               "unl_members.csv"),
-        ("UMCNL (curated)",             "umcnl_members.csv"),
-        ("VH (curated)",                "vh_members.csv"),
-        ("KNAW Institutes (curated)",   "knaw_institutes.csv"),
-        ("NWO-i (curated)",             "nwoi_institutes.csv"),
-        ("OpenAIRE Members (curated)",  "openaire_members.csv"),
-        ("NBN Prefixes (curated)",      "nbn_prefixes.csv"),
+def preview_loaders(pd, OUT_PARQUET, PROCESSED_DIR):
+    # Preview loaders — one entry per pipeline dataset, used by the Dataset Preview
+    # dropdown. Everything except the assembled output reads data/processed/<name>.parquet
+    # (silver, built by src.processor.fetch()) rather than data/raw/ directly — a single
+    # Parquet read is instant regardless of how many per-org files the source fetched,
+    # unlike the old approach of re-parsing OpenAlex/OpenAIRE's ~1700 raw JSON files on
+    # every preview (which needed an artificial 300-file cap to stay responsive).
+    _PROCESSED_FILES = [
+        ("ROR",                  "ror"),
+        ("Zenodo Baseline",      "zenodo"),
+        ("OpenAlex",             "openalex"),
+        ("OpenAIRE",             "openaire"),
+        ("ALEI / KVK",           "alei"),
+        ("EU PIC",               "pic"),
+        ("DUO HO",               "duo_ho"),
+        ("DUO MBO",              "duo_mbo"),
+        ("Barcelona Declaration","barcelona"),
+        ("Memberships (joined)", "memberships"),
+        ("SURF Members (curated)",     "surf_members"),
+        ("UKB (curated)",              "ukb_members"),
+        ("SHB (curated)",              "shb_members"),
+        ("UNL (curated)",              "unl_members"),
+        ("UMCNL (curated)",            "umcnl_members"),
+        ("VH (curated)",               "vh_members"),
+        ("KNAW Institutes (curated)",  "knaw_institutes"),
+        ("NWO-i (curated)",            "nwoi_institutes"),
+        ("OpenAIRE Members (curated)", "openaire_members"),
+        ("NBN Prefixes (curated)",     "nbn_prefixes"),
     ]
 
     def _load_assembled():
         return pd.read_parquet(OUT_PARQUET) if OUT_PARQUET.exists() else None
 
-    def _load_ror_raw():
-        from src.ror_fetcher import load_orgs
-        rows = load_orgs()
-        return pd.DataFrame(rows) if rows else None
-
-    def _load_zenodo_raw():
-        path = RAW_DIR / "zenodo" / "nl-orgs-baseline.xlsx"
-        return pd.read_excel(path) if path.exists() else None
-
-    def _flatten_per_org_json(stage: str, list_key: str, limit: int = 300):
-        # OpenAlex/OpenAIRE cache one small JSON file per organisation (1700+ files) —
-        # parsing all of them takes minutes, so this samples the first `limit` files.
+    def _load_processed(name: str):
         def _loader():
-            paths = sorted((RAW_DIR / stage).glob("*.json"))
-            paths = [p for p in paths if p.name != "_metadata.json"][:limit]
-            rows = []
-            for p in paths:
-                data = json.loads(p.read_text())
-                rows.extend(data.get(list_key, []))
-            return pd.DataFrame(rows) if rows else None
+            path = PROCESSED_DIR / f"{name}.parquet"
+            return pd.read_parquet(path) if path.exists() else None
         return _loader
 
-    def _load_barcelona_raw():
-        path = RAW_DIR / "barcelona" / "signatories.csv"
-        return pd.read_csv(path) if path.exists() else None
-
-    def _load_memberships_joined():
-        from src.ror_fetcher import load_orgs
-        from src.memberships import load_memberships
-        ror_urls = [o["ror_id_url"] for o in load_orgs()]
-        if not ror_urls:
-            return None
-        result = load_memberships(ror_urls)
-        df = pd.DataFrame.from_dict(result, orient="index").reset_index()
-        return df.rename(columns={"index": "ror_id_url"})
-
-    def _load_curated_csv(filename: str):
-        def _loader():
-            path = CURATED_DIR / filename
-            return pd.read_csv(path) if path.exists() else None
-        return _loader
-
-    PREVIEW_SOURCES = {
-        "Assembled Output": _load_assembled,
-        "ROR (raw)": _load_ror_raw,
-        "Zenodo Baseline (raw)": _load_zenodo_raw,
-        "OpenAlex (raw, first 300 files)": _flatten_per_org_json("openalex", "results"),
-        "OpenAIRE (raw, first 300 files)": _flatten_per_org_json("openaire", "results"),
-        "Barcelona Declaration (raw)": _load_barcelona_raw,
-        "ALEI / KVK": None,
-        "EU PIC": None,
-        "Memberships (joined)": _load_memberships_joined,
-    }
-    for _label, _filename in _CURATED_FILES:
-        PREVIEW_SOURCES[_label] = _load_curated_csv(_filename)
+    PREVIEW_SOURCES = {"Assembled Output": _load_assembled}
+    for _label, _name in _PROCESSED_FILES:
+        PREVIEW_SOURCES[_label] = _load_processed(_name)
 
     return (PREVIEW_SOURCES,)
 
@@ -300,10 +267,11 @@ def curate_data_intro(mo):
         "individually.\n\n"
         "Or click **Full Refresh** below to run all pipeline stages in order and "
         "reassemble the output in one click. It re-fetches every source with "
-        "`force_refresh=True` and finishes by re-running the assembler, so "
-        "`data/nl_research_orgs.parquet` ends up reflecting everything currently in "
-        "`data/curated/` plus freshly-fetched raw data. This can take a while and "
-        "calls every external API."
+        "`force_refresh=True`, re-runs the assembler, and finishes by rebuilding "
+        "`data/processed/` — the committed Parquet snapshot that feeds Dataset "
+        "Preview above and the published dashboard — so everything ends up "
+        "reflecting `data/curated/` plus freshly-fetched raw data. This can take a "
+        "while and calls every external API."
     )
     return (curate_data_intro,)
 
@@ -324,7 +292,7 @@ def full_refresh(full_refresh_btn, mo):
         _stages = [
             "src.ror_fetcher", "src.zenodo_baseline", "src.openalex", "src.openaire",
             "src.alei_fetcher", "src.pic_fetcher", "src.barcelona", "src.duo_ho_mbo",
-            "src.memberships", "src.nbn_fetcher", "src.assembler",
+            "src.memberships", "src.nbn_fetcher", "src.assembler", "src.processor",
         ]
         for _mod in mo.status.progress_bar(
             _stages, title="Full Refresh", subtitle="Running all pipeline stages…", remove_on_exit=False,
@@ -384,6 +352,9 @@ def pipeline_section(
                         result = m.fetch(rf.load_orgs(), force_refresh=True)
                     else:
                         result = m.fetch(force_refresh=True)
+                    # Keep data/processed/ (freshness cards, Dataset Preview) in sync
+                    # with the fetch that just ran
+                    _il.import_module("src.processor").fetch()
                 set_refresh_results(lambda d, r=result, s=stage: {**d, s: r})
             except Exception as e:
                 set_refresh_results(lambda d, s=stage, err=str(e): {**d, s: {"error": err}})
@@ -432,8 +403,9 @@ def pipeline_section(
         mo.md(
             "## Pipeline Stages\n"
             "One section per raw data source. **Refresh `<Source>`** re-fetches "
-            "that source only; freshness shown here also drives the Dashboard "
-            "cards above and the raw entries in Dataset Preview."
+            "that source only, then rebuilds `data/processed/` for it; freshness "
+            "shown here also drives the Dashboard cards above and the processed "
+            "entries in Dataset Preview."
         ),
         mo.accordion(accordion_items),
     ])
@@ -588,7 +560,11 @@ def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
             _df = _loader()
         if _df is None:
             _table = mo.callout(
-                mo.md("No data yet for this source — run its Refresh button in **Pipeline Stages** below."),
+                mo.md(
+                    "No data yet for this source — run its Refresh button in "
+                    "**Pipeline Stages** below (or **Full Refresh**), which also "
+                    "rebuilds `data/processed/` for this preview."
+                ),
                 kind="warn",
             )
         else:
@@ -601,10 +577,10 @@ def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
         mo.md(
             "## Dataset Preview\n"
             "Pick any dataset to inspect it directly — the final assembled output, "
-            "a raw pipeline source, or a curated membership list. Defaults to the "
-            "assembled output. Raw per-organisation sources (OpenAlex, OpenAIRE) are "
-            "capped to the first 300 cached files for speed; every other view shows "
-            "the full dataset."
+            "a processed pipeline source, or a curated membership list. Defaults to "
+            "the assembled output. Every other view reads its `data/processed/` "
+            "Parquet snapshot (see **Pipeline Stages** below), so the full dataset "
+            "loads instantly regardless of source size."
         ),
         dataset_dropdown,
         _table,

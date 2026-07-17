@@ -149,6 +149,10 @@ def fetch(force_refresh: bool = False) -> dict:
 
     resp = requests.get(KB_CATALOG_URL, timeout=30)
     resp.raise_for_status()
+    # Cache the fetched page itself (bronze), matching every other stage's contract —
+    # previously only _metadata.json was written here, never the HTML actually parsed.
+    NBN_META_DIR.mkdir(parents=True, exist_ok=True)
+    (NBN_META_DIR / "kb_nbn_catalog.html").write_text(resp.text, encoding="utf-8")
     entries = _parse_catalog(resp.text)
     if not entries:
         raise ValueError("NBN catalog parsing returned 0 entries — page format may have changed")

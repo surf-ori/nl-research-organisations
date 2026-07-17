@@ -28,15 +28,12 @@ def shared_state(mo, pl):
     # app, via mo.notebook_location(), so paths resolve both locally and on GitHub Pages
     PUBLIC_DIR = mo.notebook_location() / "public"
     OUT_PARQUET = PUBLIC_DIR / "nl_research_orgs.parquet"
-    CURATED_DIR = PUBLIC_DIR / "curated"
-    RAW_DIR = PUBLIC_DIR / "raw"
-    # GitHub Pages serves static files only — there's no directory listing over HTTP, so
-    # this app can't glob() a folder of per-org JSON files (or read an .xlsx, which has
-    # no WASM support in polars either) the way the local pipeline does.
-    # apps/prepare_raw_previews.py converts those into single, WASM-readable files at
-    # build time: ROR/OpenAlex/OpenAIRE (many per-org JSON files) to NDJSON, and the
-    # Zenodo baseline (.xlsx) to CSV.
-    FLAT_DIR = PUBLIC_DIR / "raw_flat"
+    # GitHub Pages serves static files only (no directory listing over HTTP, and no
+    # WASM support for xlsx/many-small-JSON-files at all) — data/raw/ itself isn't
+    # even committed to the repo (bronze, gitignored). src/processor.py converts
+    # everything currently cached into one committed Parquet file per source under
+    # data/processed/, which this app reads directly.
+    PROCESSED_DIR = PUBLIC_DIR / "processed"
     LOGO_PATH = PUBLIC_DIR / "assets" / "surf-logo.svg"
 
     # One entry per pipeline stage: display label + canonical source URL
@@ -55,22 +52,18 @@ def shared_state(mo, pl):
     }
 
     def read_meta(stage: str) -> dict | None:
-        # Read the bundled _metadata.json for a pipeline stage; None if it wasn't
-        # published. read_ndjson (not read_json) — a single bare JSON object is
+        # Read the bundled <stage>_metadata.json for a pipeline stage; None if it
+        # wasn't published. read_ndjson (not read_json) — a single bare JSON object is
         # trivially valid one-line NDJSON, and marimo's WASM patch only covers
         # read_csv/read_parquet/read_ndjson (read_json shares the same fallback, but
         # being explicit about the actual file shape avoids relying on that).
-        path = (
-            RAW_DIR / "_assembly_metadata.json"
-            if stage == "assembler"
-            else RAW_DIR / stage / "_metadata.json"
-        )
+        path = PROCESSED_DIR / f"{stage}_metadata.json"
         try:
             return pl.read_ndjson(str(path)).to_dicts()[0]
         except Exception:
             return None
 
-    return CURATED_DIR, FLAT_DIR, LOGO_PATH, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
+    return LOGO_PATH, OUT_PARQUET, PROCESSED_DIR, STAGE_META, read_meta
 
 
 @app.cell(hide_code=True)
@@ -152,28 +145,36 @@ def dashboard_section(STAGE_META, mo, read_meta, OUT_PARQUET, pl):
 
 
 @app.cell(hide_code=True)
-def preview_loaders(pl, OUT_PARQUET, CURATED_DIR, RAW_DIR, FLAT_DIR):
-    # Preview loaders — the assembled output, every curated membership/prefix CSV, and
-    # the raw per-stage data the pipeline fetched (bundled in full for transparency).
-    #
-    # All reads go through polars, and any multi-file or non-CSV/parquet/NDJSON raw
-    # source is pre-converted by apps/prepare_raw_previews.py at build time — see
-    # shared_state's FLAT_DIR comment and this repo's WASM-compatibility notes: marimo
-    # only patches polars' read_csv/read_parquet/read_ndjson to work over HTTP in
-    # Pyodide (fetching bytes itself, decoding via pyarrow); pandas has no such patch,
-    # and even polars' patched read_ndjson only accepts true NDJSON (one JSON object
-    # per line) since it goes through pyarrow.json.read_json under the hood.
-    _CURATED_FILES = [
-        ("SURF Members",      "surf_members.csv"),
-        ("UKB",               "ukb_members.csv"),
-        ("SHB",               "shb_members.csv"),
-        ("UNL",               "unl_members.csv"),
-        ("UMCNL",             "umcnl_members.csv"),
-        ("VH",                "vh_members.csv"),
-        ("KNAW Institutes",   "knaw_institutes.csv"),
-        ("NWO-i",             "nwoi_institutes.csv"),
-        ("OpenAIRE Members",  "openaire_members.csv"),
-        ("NBN Prefixes",      "nbn_prefixes.csv"),
+def preview_loaders(pl, OUT_PARQUET, PROCESSED_DIR):
+    # Preview loaders — the assembled output, plus every processed (silver) source:
+    # each pipeline stage's data/processed/<name>.parquet, built locally by
+    # src/processor.py and committed to git (data/raw/ itself is gitignored — bronze,
+    # too big/slow to commit — and GitHub Pages can't read it anyway: no directory
+    # listing over HTTP, no WASM support for xlsx or DUO's field/records JSON shape).
+    # A single loader works for every entry since everything is already Parquet —
+    # marimo's WASM fallback patches polars' read_parquet to work over HTTP in Pyodide
+    # (pandas has no equivalent patch; see notebook.py's own note on this).
+    _PROCESSED_FILES = [
+        ("ROR",                  "ror"),
+        ("Zenodo Baseline",      "zenodo"),
+        ("OpenAlex",             "openalex"),
+        ("OpenAIRE",             "openaire"),
+        ("ALEI / KVK",           "alei"),
+        ("EU PIC",               "pic"),
+        ("DUO HO",               "duo_ho"),
+        ("DUO MBO",              "duo_mbo"),
+        ("Barcelona Declaration","barcelona"),
+        ("Memberships (joined)", "memberships"),
+        ("SURF Members",         "surf_members"),
+        ("UKB",                  "ukb_members"),
+        ("SHB",                  "shb_members"),
+        ("UNL",                  "unl_members"),
+        ("UMCNL",                "umcnl_members"),
+        ("VH",                   "vh_members"),
+        ("KNAW Institutes",      "knaw_institutes"),
+        ("NWO-i",                "nwoi_institutes"),
+        ("OpenAIRE Members",     "openaire_members"),
+        ("NBN Prefixes",         "nbn_prefixes"),
     ]
 
     def _load_assembled():
@@ -182,54 +183,17 @@ def preview_loaders(pl, OUT_PARQUET, CURATED_DIR, RAW_DIR, FLAT_DIR):
         except Exception:
             return None
 
-    def _load_curated_csv(filename: str):
+    def _load_processed(name: str):
         def _loader():
             try:
-                return pl.read_csv(str(CURATED_DIR / filename))
+                return pl.read_parquet(str(PROCESSED_DIR / f"{name}.parquet"))
             except Exception:
                 return None
         return _loader
 
-    def _load_flat_ndjson(filename: str):
-        def _loader():
-            try:
-                # infer_schema_length=None: a column that's null in the sampled rows
-                # and a real (if properly stringified) value later otherwise commits
-                # to a Null dtype and errors on that later row. Ignored by marimo's
-                # WASM fallback (which drops all kwargs and calls pyarrow directly,
-                # already schema-safe) — this only matters for local, non-WASM runs.
-                return pl.read_ndjson(str(FLAT_DIR / filename), infer_schema_length=None)
-            except Exception:
-                return None
-        return _loader
-
-    def _load_flat_csv(filename: str):
-        def _loader():
-            try:
-                return pl.read_csv(str(FLAT_DIR / filename))
-            except Exception:
-                return None
-        return _loader
-
-    def _load_barcelona_raw():
-        try:
-            return pl.read_csv(str(RAW_DIR / "barcelona" / "signatories.csv"))
-        except Exception:
-            return None
-
-    PREVIEW_SOURCES = {
-        "Assembled Output": _load_assembled,
-        "ROR (raw)": _load_flat_ndjson("ror.ndjson"),
-        "Zenodo Baseline (raw)": _load_flat_csv("zenodo.csv"),
-        "OpenAlex (raw)": _load_flat_ndjson("openalex.ndjson"),
-        "OpenAIRE (raw)": _load_flat_ndjson("openaire.ndjson"),
-        "ALEI / KVK (raw)": _load_flat_ndjson("alei.ndjson"),
-        "DUO HO (raw)": _load_flat_csv("duo_ho.csv"),
-        "DUO MBO (raw)": _load_flat_csv("duo_mbo.csv"),
-        "Barcelona Declaration (raw)": _load_barcelona_raw,
-    }
-    for _label, _filename in _CURATED_FILES:
-        PREVIEW_SOURCES[_label] = _load_curated_csv(_filename)
+    PREVIEW_SOURCES = {"Assembled Output": _load_assembled}
+    for _label, _name in _PROCESSED_FILES:
+        PREVIEW_SOURCES[_label] = _load_processed(_name)
 
     return (PREVIEW_SOURCES,)
 
