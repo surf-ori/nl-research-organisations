@@ -7,8 +7,12 @@ DUO HO/MBO Fetcher
 
 Downloads DUO's official address lists of Dutch higher education (HO) and
 vocational education (MBO) institutions and matches each ROR organisation against
-them by name, adding is_ho_institution/ho_instellingscode and
-is_mbo_institution/mbo_instellingscode columns.
+them by name, adding a combined is_duo_institute/duo_institution_code/
+duo_institute_type/duo_straatnaam/duo_huisnummer/duo_postcode/duo_plaatsnaam set of
+columns. HO and MBO are combined into one set of columns since no ROR org has been
+found to match both lists; duo_institute_type carries the HO ("SOORT HO", e.g.
+"hbo"/"wo") or MBO ("MBO INSTELLINGSSOORT - CODE", e.g. "BER"/"AOC") type code
+as-is, so which vocabulary a given value belongs to still tells you HO vs MBO.
 
 Sources (see data.overheid.nl for the human-readable dataset pages):
   HO:  https://data.overheid.nl/dataset/adressen_ho  (RDF: .../adressen_ho/rdf)
@@ -50,13 +54,15 @@ with app.setup:
         field_ids = [f["id"] for f in data.get("fields", [])]
         return [dict(zip(field_ids, record)) for record in data.get("records", [])]
 
-    def _distinct_institutions(rows: list[dict]) -> dict[str, dict]:
+    def _distinct_institutions(rows: list[dict], type_field: str) -> dict[str, dict]:
         """Collapse per-location rows to one entry per distinct institution name.
 
-        Returns {INSTELLINGSNAAM: {code, straatnaam, huisnummer, postcode, plaatsnaam}},
-        keeping the first row seen. DUO's dump only carries a combined house
-        number + addition field ("HUISNUMMER-TOEVOEGING", e.g. "10" or "12a"), not
-        separate house number and addition columns.
+        Returns {INSTELLINGSNAAM: {code, type, straatnaam, huisnummer, postcode,
+        plaatsnaam}}, keeping the first row seen. `type_field` is "SOORT HO" for the
+        HO dump or "MBO INSTELLINGSSOORT - CODE" for the MBO dump — each list uses
+        its own type vocabulary. DUO's dump only carries a combined house number +
+        addition field ("HUISNUMMER-TOEVOEGING", e.g. "10" or "12a"), not separate
+        house number and addition columns.
         """
         out: dict[str, dict] = {}
         for row in rows:
@@ -64,6 +70,7 @@ with app.setup:
             if name and name not in out:
                 out[name] = {
                     "code":       row.get("INSTELLINGSCODE"),
+                    "type":       row.get(type_field),
                     "straatnaam": row.get("STRAATNAAM"),
                     "huisnummer": row.get("HUISNUMMER-TOEVOEGING"),
                     "postcode":   row.get("POSTCODE"),
@@ -94,33 +101,27 @@ with app.setup:
 
 @app.function
 def load_results(ror_orgs: list[dict]) -> dict[str, dict]:
-    """Match each ROR org against the cached DUO HO and MBO institution lists.
+    """Match each ROR org against the cached DUO HO and MBO institution lists,
+    combined into a single set of columns (HO is tried first; no ROR org has been
+    found to match both lists).
 
-    Returns a mapping of ror_id_url -> {is_ho_institution, ho_instellingscode,
-    ho_straatnaam, ho_huisnummer, ho_postcode, ho_plaatsnaam,
-    is_mbo_institution, mbo_instellingscode,
-    mbo_straatnaam, mbo_huisnummer, mbo_postcode, mbo_plaatsnaam}.
+    Returns a mapping of ror_id_url -> {is_duo_institute, duo_institution_code,
+    duo_institute_type, duo_straatnaam, duo_huisnummer, duo_postcode, duo_plaatsnaam}.
     """
-    ho_institutions  = {k.lower(): v for k, v in _distinct_institutions(_read_dump("ho.json")).items()}
-    mbo_institutions = {k.lower(): v for k, v in _distinct_institutions(_read_dump("mbo.json")).items()}
+    ho_institutions  = {k.lower(): v for k, v in _distinct_institutions(_read_dump("ho.json"), "SOORT HO").items()}
+    mbo_institutions = {k.lower(): v for k, v in _distinct_institutions(_read_dump("mbo.json"), "MBO INSTELLINGSSOORT - CODE").items()}
 
     results: dict[str, dict] = {}
     for org in ror_orgs:
-        ho_info  = _match(org, ho_institutions)
-        mbo_info = _match(org, mbo_institutions)
+        info = _match(org, ho_institutions) or _match(org, mbo_institutions)
         results[org["ror_id_url"]] = {
-            "is_ho_institution":    ho_info is not None,
-            "ho_instellingscode":   ho_info.get("code") if ho_info else None,
-            "ho_straatnaam":        ho_info.get("straatnaam") if ho_info else None,
-            "ho_huisnummer":        ho_info.get("huisnummer") if ho_info else None,
-            "ho_postcode":          ho_info.get("postcode") if ho_info else None,
-            "ho_plaatsnaam":        ho_info.get("plaatsnaam") if ho_info else None,
-            "is_mbo_institution":   mbo_info is not None,
-            "mbo_instellingscode":  mbo_info.get("code") if mbo_info else None,
-            "mbo_straatnaam":       mbo_info.get("straatnaam") if mbo_info else None,
-            "mbo_huisnummer":       mbo_info.get("huisnummer") if mbo_info else None,
-            "mbo_postcode":         mbo_info.get("postcode") if mbo_info else None,
-            "mbo_plaatsnaam":       mbo_info.get("plaatsnaam") if mbo_info else None,
+            "is_duo_institute":     info is not None,
+            "duo_institution_code": info.get("code") if info else None,
+            "duo_institute_type":   info.get("type") if info else None,
+            "duo_straatnaam":       info.get("straatnaam") if info else None,
+            "duo_huisnummer":       info.get("huisnummer") if info else None,
+            "duo_postcode":         info.get("postcode") if info else None,
+            "duo_plaatsnaam":       info.get("plaatsnaam") if info else None,
         }
     return results
 
@@ -167,8 +168,9 @@ def header():
     ROR ID, and DUO's official Dutch institution names differ too much from ROR's
     English display names for fuzzy matching to be safe (see `_match()`'s docstring).
 
-    Adds `is_ho_institution`/`ho_instellingscode` and
-    `is_mbo_institution`/`mbo_instellingscode`.
+    Adds `is_duo_institute`/`duo_institution_code`/`duo_institute_type` (HO and MBO
+    combined — no ROR org matches both lists) plus `duo_straatnaam`/`duo_huisnummer`/
+    `duo_postcode`/`duo_plaatsnaam`.
 
     Cached at `data/raw/duo/ho.json` and `data/raw/duo/mbo.json`.
     """)
@@ -178,8 +180,8 @@ def header():
 @app.cell(hide_code=True)
 def summary():
     # Summary — count of distinct institutions in each cached dump
-    ho_count = len(_distinct_institutions(_read_dump("ho.json")))
-    mbo_count = len(_distinct_institutions(_read_dump("mbo.json")))
+    ho_count = len(_distinct_institutions(_read_dump("ho.json"), "SOORT HO"))
+    mbo_count = len(_distinct_institutions(_read_dump("mbo.json"), "MBO INSTELLINGSSOORT - CODE"))
     content = (
         mo.md(f"**{ho_count} HO institutions**, **{mbo_count} MBO institutions** cached")
         if ho_count or mbo_count

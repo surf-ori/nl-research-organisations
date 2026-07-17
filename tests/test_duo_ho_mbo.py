@@ -14,7 +14,7 @@ MBO_FIELDS = ["_id", "MBO INSTELLINGSSOORT - CODE", "INSTELLINGSCODE", "INSTELLI
 HO_FIELDS_WITH_ADDRESS = HO_FIELDS + ["STRAATNAAM", "HUISNUMMER-TOEVOEGING", "POSTCODE", "PLAATSNAAM"]
 
 
-def test_load_results_includes_ho_address_fields(tmp_path):
+def test_load_results_includes_address_fields(tmp_path):
     duo_dir = tmp_path / "duo"
     duo_dir.mkdir()
     (duo_dir / "ho.json").write_text(_make_dump(
@@ -28,14 +28,14 @@ def test_load_results_includes_ho_address_fields(tmp_path):
         results = load_results(orgs)
 
     ho = results["https://ror.org/ho-match"]
-    assert ho["ho_straatnaam"] == "Rengerslaan"
-    assert ho["ho_huisnummer"] == "10"
-    assert ho["ho_postcode"] == "8917DD"
-    assert ho["ho_plaatsnaam"] == "LEEUWARDEN"
-    assert ho["mbo_straatnaam"] is None
+    assert ho["duo_straatnaam"] == "Rengerslaan"
+    assert ho["duo_huisnummer"] == "10"
+    assert ho["duo_postcode"] == "8917DD"
+    assert ho["duo_plaatsnaam"] == "LEEUWARDEN"
+    assert ho["duo_institute_type"] == "hbo"
 
 
-def test_load_results_matches_ho_and_mbo(tmp_path):
+def test_load_results_matches_ho_and_mbo_into_combined_columns(tmp_path):
     duo_dir = tmp_path / "duo"
     duo_dir.mkdir()
     (duo_dir / "ho.json").write_text(_make_dump(
@@ -54,19 +54,18 @@ def test_load_results_matches_ho_and_mbo(tmp_path):
         results = load_results(orgs)
 
     ho = results["https://ror.org/ho-match"]
-    assert ho["is_ho_institution"] is True
-    assert ho["ho_instellingscode"] == "31FR"
-    assert ho["is_mbo_institution"] is False
+    assert ho["is_duo_institute"] is True
+    assert ho["duo_institution_code"] == "31FR"
+    assert ho["duo_institute_type"] == "hbo"
 
     mbo = results["https://ror.org/mbo-match"]
-    assert mbo["is_mbo_institution"] is True
-    assert mbo["mbo_instellingscode"] == "04NZ"
-    assert mbo["is_ho_institution"] is False
+    assert mbo["is_duo_institute"] is True
+    assert mbo["duo_institution_code"] == "04NZ"
+    assert mbo["duo_institute_type"] == "BER"
 
     none_matched = results["https://ror.org/no-match"]
-    assert none_matched["is_ho_institution"] is False
-    assert none_matched["is_mbo_institution"] is False
-    assert none_matched["ho_instellingscode"] is None
+    assert none_matched["is_duo_institute"] is False
+    assert none_matched["duo_institution_code"] is None
 
 
 def test_load_results_does_not_fuzzy_match_similar_names(tmp_path):
@@ -84,8 +83,8 @@ def test_load_results_does_not_fuzzy_match_similar_names(tmp_path):
         from src.duo_ho_mbo import load_results
         orgs = [{"ror_id_url": "https://ror.org/rotterdam", "name": "Rotterdam University of Applied Sciences"}]
         results = load_results(orgs)
-    assert results["https://ror.org/rotterdam"]["is_ho_institution"] is False
-    assert results["https://ror.org/rotterdam"]["ho_instellingscode"] is None
+    assert results["https://ror.org/rotterdam"]["is_duo_institute"] is False
+    assert results["https://ror.org/rotterdam"]["duo_institution_code"] is None
 
 
 def test_load_results_matches_via_alias(tmp_path):
@@ -103,8 +102,8 @@ def test_load_results_matches_via_alias(tmp_path):
             "aliases": "Rijksuniversiteit Utrecht|Universiteit Utrecht",
         }]
         results = load_results(orgs)
-    assert results["https://ror.org/04pp8hn57"]["is_ho_institution"] is True
-    assert results["https://ror.org/04pp8hn57"]["ho_instellingscode"] == "21PN"
+    assert results["https://ror.org/04pp8hn57"]["is_duo_institute"] is True
+    assert results["https://ror.org/04pp8hn57"]["duo_institution_code"] == "21PN"
 
 
 def test_fetch_downloads_both_dumps(tmp_path):

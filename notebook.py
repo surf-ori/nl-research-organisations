@@ -75,8 +75,7 @@ def preview_loaders(pd, OUT_PARQUET, PROCESSED_DIR):
         ("OpenAIRE",             "openaire"),
         ("ALEI / KVK",           "alei"),
         ("EU PIC",               "pic"),
-        ("DUO HO",               "duo_ho"),
-        ("DUO MBO",              "duo_mbo"),
+        ("DUO Institutes",       "duo_institutes"),
         ("Barcelona Declaration","barcelona"),
         ("Memberships (joined)", "memberships"),
         ("SURF Members (curated)",     "surf_members"),
@@ -247,7 +246,9 @@ def dashboard_section(OUT_PARQUET, STAGE_META, datetime, mo, pd, read_meta, time
             "The file this pipeline produces (`data/nl_research_orgs.parquet`) "
             "feeds the Dutch Open Research Information data lake, and is archived "
             "at the [SURF Zenodo community](https://zenodo.org/communities/surf/) "
-            "where it gets fetched for further processing."
+            "where it gets fetched for further processing. See the "
+            "[live dashboard](https://surf-ori.github.io/nl-research-organisations/) "
+            "for a published, read-only view of this same data."
         ),
         mo.hstack(cards, wrap=True),
     ])
