@@ -34,6 +34,9 @@ def test_assemble_produces_parquet(tmp_path, ror_page_nl):
     (raw / "barcelona" / "signatories.csv").write_text(
         "ror_id,organisation_name,country\nhttps://ror.org/04dkp9463,VU,NL\n"
     )
+    (raw / "openalex" / "04dkp9463.json").write_text(json.dumps(
+        {"results": [{"id": "https://openalex.org/I123456789"}]}
+    ))
     curated = tmp_path / "curated"
     curated.mkdir()
     for name in [
@@ -79,3 +82,17 @@ def test_assemble_produces_parquet(tmp_path, ror_page_nl):
     assert "alei_id" in df.columns
     assert "pic_id" in df.columns
     assert bool(df.iloc[0]["ori_base_org"]) is True
+
+    row = df.iloc[0]
+    assert row["openalex_institution_id"] == "I123456789"
+    assert row["openalex_institution_id_url"] == "https://openalex.org/I123456789"
+    # No OpenAIRE match in this fixture -> falls back to a ROR-filtered OpenAIRE
+    # Explore search URL, with the ROR URL percent-encoded twice
+    assert row["openaire_org_id"] is None
+    assert row["openaire_org_id_url"] == (
+        "https://explore.openaire.eu/search/advanced/organizations?f0=pid&fv0="
+        "https%253A%252F%252Fror.org%252F04dkp9463"
+    )
+    for col in ["ho_straatnaam", "ho_huisnummer", "ho_postcode", "ho_plaatsnaam",
+                "mbo_straatnaam", "mbo_huisnummer", "mbo_postcode", "mbo_plaatsnaam"]:
+        assert col in df.columns

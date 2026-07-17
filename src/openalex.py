@@ -53,7 +53,9 @@ with app.setup:
 
 @app.function
 def load_results() -> dict[str, str | None]:
-    """Read all cached OpenAlex JSON files and return a mapping of ROR URL → OpenAlex institution ID.
+    """Read all cached OpenAlex JSON files and return a mapping of ROR URL → bare
+    OpenAlex institution ID (e.g. "I2800003148", not the full "https://openalex.org/I..."
+    URL — the assembler reconstructs that URL for openalex_institution_id_url).
 
     Returns None for any ROR URL whose institution was not found in OpenAlex.
     """
@@ -65,7 +67,8 @@ def load_results() -> dict[str, str | None]:
         ror_url = f"https://ror.org/{short_id}"
         data = json.loads(path.read_text())
         results = data.get("results", [])
-        out[ror_url] = results[0].get("id") if results else None
+        full_id = results[0].get("id") if results else None
+        out[ror_url] = full_id.rsplit("/", 1)[-1] if full_id else None
     return out
 
 

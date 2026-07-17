@@ -15,10 +15,11 @@ with app.setup:
     import json
     from datetime import datetime, timezone
     from pathlib import Path
+    from urllib.parse import quote
 
     import pandas as pd
 
-    # Output paths and the canonical 47-column order for the assembled dataset
+    # Output paths and the canonical column order for the assembled dataset
     RAW_DIR    = Path("data/raw")
     CURATED_DIR = Path("data/curated")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
@@ -31,21 +32,41 @@ with app.setup:
         "isni_id", "wikidata_id", "grid_id", "fundref_id",
         "viaf_id", "ringgold_id", "orgref_id", "orgreg_id", "rrid_id",
         "linkedin_url", "mag_id",
-        "ori_base_org", "openalex_institution_id", "openaire_org_id",
+        "ori_base_org",
+        "openalex_institution_id", "openalex_institution_id_url",
+        "openaire_org_id", "openaire_org_id_url",
         "alei_id", "pic_id",
         "nbn_prefix",
         "is_barcelona_signatory",
         "is_ho_institution", "ho_instellingscode",
+        "ho_straatnaam", "ho_huisnummer", "ho_postcode", "ho_plaatsnaam",
         "is_mbo_institution", "mbo_instellingscode",
+        "mbo_straatnaam", "mbo_huisnummer", "mbo_postcode", "mbo_plaatsnaam",
         "is_surf_member", "surf_member_type",
         "is_ukb", "is_shb", "is_unl", "is_umcnl", "is_vh",
         "is_knaw_institute", "is_nwoi_institute", "is_openaire_member",
     ]
 
+    def _openalex_url(bare_id: str | None) -> str:
+        return f"https://openalex.org/{bare_id}" if bare_id else ""
+
+    def _openaire_url(openaire_org_id: str | None, ror_id_url: str) -> str:
+        """Link to the OpenAIRE org record if we have its openorgs____ ID; otherwise
+        fall back to an OpenAIRE Explore advanced search filtered by ROR PID. The
+        fv0 filter value must be percent-encoded twice — once for the ROR URL itself,
+        then again because the search UI's own query parameter stores an
+        already-encoded value.
+        """
+        if openaire_org_id:
+            return f"https://explore.openaire.eu/search/organization?organizationId={openaire_org_id}"
+        encoded_ror = quote(quote(ror_id_url, safe=""), safe="")
+        return f"https://explore.openaire.eu/search/advanced/organizations?f0=pid&fv0={encoded_ror}"
+
 
 @app.function
 def fetch(force_refresh: bool = False) -> dict:
-    """Assemble all pipeline stage outputs into a single 47-column Parquet + CSV dataset.
+    """Assemble all pipeline stage outputs into a single Parquet + CSV dataset
+    (see COLUMN_ORDER for the full column list).
 
     Imports load_* from every pipeline stage module, joins on ror_id_url, and writes
     OUT_PARQUET and OUT_CSV. Local imports prevent circular dependencies at module level.
@@ -120,16 +141,26 @@ def fetch(force_refresh: bool = False) -> dict:
             "linkedin_url":            oa_ids.get("linkedin_url"),
             "mag_id":                  oa_ids.get("mag_id"),
             "ori_base_org":            url in baseline_ids,
-            "openalex_institution_id": openalex.get(url),
-            "openaire_org_id":         openaire.get(url),
+            "openalex_institution_id":     openalex.get(url),
+            "openalex_institution_id_url": _openalex_url(openalex.get(url)),
+            "openaire_org_id":             openaire.get(url),
+            "openaire_org_id_url":         _openaire_url(openaire.get(url), url),
             "alei_id":                 alei.get(url) or "",
             "pic_id":                  pic.get(url) or oa_ids.get("pic_id") or "",
             "nbn_prefix":              nbn.get(url, ""),
             "is_barcelona_signatory":  barcelona.get(url, False),
             "is_ho_institution":       duo_match.get("is_ho_institution", False),
             "ho_instellingscode":      duo_match.get("ho_instellingscode"),
+            "ho_straatnaam":           duo_match.get("ho_straatnaam"),
+            "ho_huisnummer":           duo_match.get("ho_huisnummer"),
+            "ho_postcode":             duo_match.get("ho_postcode"),
+            "ho_plaatsnaam":           duo_match.get("ho_plaatsnaam"),
             "is_mbo_institution":      duo_match.get("is_mbo_institution", False),
             "mbo_instellingscode":     duo_match.get("mbo_instellingscode"),
+            "mbo_straatnaam":          duo_match.get("mbo_straatnaam"),
+            "mbo_huisnummer":          duo_match.get("mbo_huisnummer"),
+            "mbo_postcode":            duo_match.get("mbo_postcode"),
+            "mbo_plaatsnaam":          duo_match.get("mbo_plaatsnaam"),
             "is_surf_member":          m.get("is_surf_member", False),
             "surf_member_type":        m.get("surf_member_type"),
             "is_ukb":                  m.get("is_ukb", False),
@@ -163,7 +194,7 @@ def header():
     mo.md("""
     ## Assembler — Dataset Assembly
 
-    Joins all pipeline stage outputs into a single 47-column dataset:
+    Joins all pipeline stage outputs into a single dataset (see `COLUMN_ORDER`):
 
     - **Input**: cached JSON/CSV files produced by each `src/*.py` stage
     - **Output**: `data/nl_research_orgs.parquet` and `data/nl_research_orgs.csv`

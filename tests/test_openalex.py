@@ -10,7 +10,7 @@ def test_load_results(tmp_path):
     with patch("src.openalex.DATA_DIR", oa_dir):
         from src.openalex import load_results
         results = load_results()
-    assert results["https://ror.org/04dkp9463"] == "https://openalex.org/I123456789"
+    assert results["https://ror.org/04dkp9463"] == "I123456789"
 
 
 def test_fetch_skips_cached(tmp_path):
