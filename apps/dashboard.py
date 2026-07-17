@@ -24,6 +24,11 @@ def shared_state(mo, pd):
     OUT_PARQUET = PUBLIC_DIR / "nl_research_orgs.parquet"
     CURATED_DIR = PUBLIC_DIR / "curated"
     RAW_DIR = PUBLIC_DIR / "raw"
+    # GitHub Pages serves static files only — there's no directory listing over HTTP, so
+    # this app can't glob() a folder of per-org JSON files the way the local pipeline
+    # does. apps/prepare_raw_previews.py flattens those multi-file raw sources (ROR
+    # pages, OpenAlex/OpenAIRE per-org files) into single parquet files at build time.
+    FLAT_DIR = PUBLIC_DIR / "raw_flat"
     LOGO_PATH = PUBLIC_DIR / "assets" / "surf-logo.svg"
 
     # One entry per pipeline stage: display label + canonical source URL
@@ -52,7 +57,7 @@ def shared_state(mo, pd):
         except Exception:
             return None
 
-    return CURATED_DIR, LOGO_PATH, OUT_PARQUET, STAGE_META, read_meta
+    return CURATED_DIR, FLAT_DIR, LOGO_PATH, OUT_PARQUET, RAW_DIR, STAGE_META, read_meta
 
 
 @app.cell(hide_code=True)
@@ -134,8 +139,9 @@ def dashboard_section(STAGE_META, mo, read_meta, OUT_PARQUET, pd):
 
 
 @app.cell(hide_code=True)
-def preview_loaders(pd, OUT_PARQUET, CURATED_DIR):
-    # Preview loaders — the assembled output plus every curated membership/prefix CSV
+def preview_loaders(pd, OUT_PARQUET, CURATED_DIR, RAW_DIR, FLAT_DIR):
+    # Preview loaders — the assembled output, every curated membership/prefix CSV, and
+    # the raw per-stage data the pipeline fetched (bundled in full for transparency)
     _CURATED_FILES = [
         ("SURF Members",      "surf_members.csv"),
         ("UKB",               "ukb_members.csv"),
@@ -163,7 +169,36 @@ def preview_loaders(pd, OUT_PARQUET, CURATED_DIR):
                 return None
         return _loader
 
-    PREVIEW_SOURCES = {"Assembled Output": _load_assembled}
+    def _load_flat_json(filename: str):
+        # Pre-flattened by apps/prepare_raw_previews.py at build time — see FLAT_DIR's
+        # comment in shared_state for why (no directory listing over static HTTP)
+        def _loader():
+            try:
+                return pd.read_json(str(FLAT_DIR / filename))
+            except Exception:
+                return None
+        return _loader
+
+    def _load_zenodo_raw():
+        try:
+            return pd.read_excel(str(RAW_DIR / "zenodo" / "nl-orgs-baseline.xlsx"))
+        except Exception:
+            return None
+
+    def _load_barcelona_raw():
+        try:
+            return pd.read_csv(str(RAW_DIR / "barcelona" / "signatories.csv"))
+        except Exception:
+            return None
+
+    PREVIEW_SOURCES = {
+        "Assembled Output": _load_assembled,
+        "ROR (raw)": _load_flat_json("ror.json"),
+        "Zenodo Baseline (raw)": _load_zenodo_raw,
+        "OpenAlex (raw)": _load_flat_json("openalex.json"),
+        "OpenAIRE (raw)": _load_flat_json("openaire.json"),
+        "Barcelona Declaration (raw)": _load_barcelona_raw,
+    }
     for _label, _filename in _CURATED_FILES:
         PREVIEW_SOURCES[_label] = _load_curated_csv(_filename)
 
@@ -184,7 +219,8 @@ def dataset_preview_dropdown(mo, PREVIEW_SOURCES):
 @app.cell(hide_code=True)
 def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
     # Dataset preview table — renders whichever dataset is selected above
-    _df = PREVIEW_SOURCES[dataset_dropdown.value]()
+    with mo.status.spinner(title=f"Loading {dataset_dropdown.value}…", remove_on_exit=True):
+        _df = PREVIEW_SOURCES[dataset_dropdown.value]()
     if _df is None:
         _table = mo.callout(mo.md("Not available in this published snapshot."), kind="warn")
     else:
@@ -196,9 +232,9 @@ def dataset_preview_table(mo, dataset_dropdown, PREVIEW_SOURCES):
     dataset_preview_section = mo.vstack([
         mo.md(
             "## Dataset Preview\n"
-            "Pick any dataset to inspect it directly — the final assembled "
-            "output, or any curated membership/prefix list. Defaults to the "
-            "assembled output."
+            "Pick any dataset to inspect it directly — the final assembled output, "
+            "a raw pipeline source, or any curated membership/prefix list. Defaults "
+            "to the assembled output."
         ),
         dataset_dropdown,
         _table,

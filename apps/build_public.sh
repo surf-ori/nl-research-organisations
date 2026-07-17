@@ -6,20 +6,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 rm -rf apps/public
-mkdir -p apps/public/curated apps/public/assets apps/public/raw
+mkdir -p apps/public/curated apps/public/assets
 
 cp data/curated/*.csv apps/public/curated/
 cp data/nl_research_orgs.parquet apps/public/nl_research_orgs.parquet
 cp assets/surf-logo.svg apps/public/assets/surf-logo.svg
+cp -r data/raw apps/public/raw
 
-for stage in ror zenodo openalex openaire alei pic barcelona memberships nbn; do
-  if [ -f "data/raw/$stage/_metadata.json" ]; then
-    mkdir -p "apps/public/raw/$stage"
-    cp "data/raw/$stage/_metadata.json" "apps/public/raw/$stage/_metadata.json"
-  fi
-done
-if [ -f data/raw/_assembly_metadata.json ]; then
-  cp data/raw/_assembly_metadata.json apps/public/raw/_assembly_metadata.json
-fi
+uv run apps/prepare_raw_previews.py
 
 echo "apps/public/ ready"
