@@ -18,10 +18,14 @@ Requires a free overheid.io account. See README.md's "API keys" section for sign
 
 Required .env key: OVERHEID_IO_API_KEY
 
-ponytail: this has never been run against the real API — the person implementing it
-does not have an overheid.io API key to test with. Verify the response shape (in
-particular which field of a multi-match result is the right one to pick) against the
-live API the first time a real key is available.
+Verified against the live API (2026-07): OpenKvK's `query` param does a text search,
+not an exact-equals match, and Dutch legal entities are usually registered under a
+formal name that differs from a research organisation's public/brand name (e.g. Vrije
+Universiteit Amsterdam is legally "Stichting VU") — the same mismatch
+src/duo_ho_mbo.py hit with DUO's official names. This tries the org's name and each
+alias as separate queries, and only accepts a result if the returned company's
+`handelsnaam` and the query substring-contain each other in some direction, to avoid
+trusting the API's own relevance ranking on an otherwise-unrelated result.
 """
 
 import marimo
@@ -63,9 +67,35 @@ with app.setup:
         resp.raise_for_status()
         return resp.json().get("_embedded", {}).get("bedrijf", [])
 
+    def _validated_matches(query: str, matches: list[dict]) -> list[dict]:
+        """Keep only matches whose handelsnaam plausibly corresponds to the query.
+
+        OpenKvK's query does a text search, not an exact match, so a query can return
+        a result that only shares a word or two — accept a match only if the query
+        and the result's name substring-contain each other in some direction.
+        """
+        q = query.strip().lower()
+        out = []
+        for m in matches:
+            handelsnaam = (m.get("handelsnaam") or "").strip().lower()
+            if not handelsnaam:
+                continue
+            if q in handelsnaam or handelsnaam in q:
+                out.append(m)
+        return out
+
     def _fetch_one(org: dict) -> str:
-        """Search for one organisation by name and cache the raw response."""
-        matches = _search_openkvk(org["name"])
+        """Search by the org's name, then each alias, and cache the first validated result."""
+        candidates = [org["name"]] + (org.get("aliases") or "").split("|")
+        matches: list[dict] = []
+        for candidate in candidates:
+            candidate = candidate.strip()
+            if not candidate:
+                continue
+            found = _validated_matches(candidate, _search_openkvk(candidate))
+            if found:
+                matches = found
+                break
         dest = _cache_path(org["ror_id_url"])
         with tempfile.NamedTemporaryFile("w", dir=DATA_DIR, delete=False, suffix=".tmp") as f:
             json.dump(matches, f)
@@ -104,12 +134,15 @@ def fetch(orgs: list[dict], force_refresh: bool = False) -> dict:
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if API_KEY:
-        try:
-            uncached = [o for o in orgs if not _cache_path(o["ror_id_url"]).exists() or force_refresh]
-            for org in uncached:
+        uncached = [o for o in orgs if not _cache_path(o["ror_id_url"]).exists() or force_refresh]
+        for org in uncached:
+            # Per-org try/except: some organisation names trip up OpenKvK's query
+            # parser (e.g. a name containing "/" gets a 400 "ongeldige vraag" —
+            # invalid query), and one bad name must not abort every org after it.
+            try:
                 _fetch_one(org)
-        except Exception as e:
-            print(f"ALEI/KVK fetch failed ({e}) — check OVERHEID_IO_API_KEY")
+            except Exception as e:
+                print(f"ALEI/KVK fetch failed for {org['name']!r} ({e})")
 
     results = load_results()
     filled = sum(1 for v in results.values() if v)
