@@ -82,6 +82,51 @@ def load_results() -> dict[str, str | None]:
 
 
 @app.function
+def load_identifiers() -> dict[str, dict[str, str | None]]:
+    """Read all cached OpenAIRE JSON files and extract external identifiers from each
+    organisation's `pids` array.
+
+    Returns a mapping of ROR URL -> {column: value} for every recognised pid scheme
+    (see _PID_SCHEME_COLUMNS). A handful of organisations carry more than one value for
+    the same scheme (e.g. multiple historical PICs); the first one encountered is kept.
+    Organisations not found in OpenAIRE map to a dict of all-None values.
+    """
+    # OpenAIRE's pid "scheme" names -> output column. Schemes vary in case in the wild
+    # (e.g. "Wikidata" vs "wikidata"), so lookup is done case-insensitively.
+    _PID_SCHEME_COLUMNS = {
+        "pic":      "pic_id",
+        "grid":     "grid_id",
+        "wikidata": "wikidata_id",
+        "isni":     "isni_id",
+        "viaf":     "viaf_id",
+        "ringgold": "ringgold_id",
+        "fundref":  "fundref_id",
+        "orgref":   "orgref_id",
+        "orgreg":   "orgreg_id",
+        "rrid":     "rrid_id",
+        "linkedin": "linkedin_url",
+        "mag_id":   "mag_id",
+    }
+    columns = set(_PID_SCHEME_COLUMNS.values())
+    out: dict[str, dict[str, str | None]] = {}
+    for path in DATA_DIR.glob("*.json"):
+        if path.name == "_metadata.json":
+            continue
+        short_id = path.stem
+        ror_url = f"https://ror.org/{short_id}"
+        data = json.loads(path.read_text())
+        results = data if isinstance(data, list) else data.get("results", data.get("content", []))
+        row: dict[str, str | None] = dict.fromkeys(columns)
+        if results:
+            for pid in results[0].get("pids", []):
+                column = _PID_SCHEME_COLUMNS.get(pid.get("scheme", "").lower())
+                if column and row.get(column) is None:
+                    row[column] = pid.get("value")
+        out[ror_url] = row
+    return out
+
+
+@app.function
 def fetch(ror_urls: list[str], force_refresh: bool = False) -> dict:
     """Fetch OpenAIRE organisation records for all given ROR URLs in parallel.
 
@@ -130,6 +175,12 @@ def header():
     loaded from `.env` (`OPENAIRE_CLIENT_ID`, `OPENAIRE_CLIENT_SECRET`).
 
     Results are cached per-ROR-ID in `data/raw/openaire/`.
+
+    Each cached record's `pids` array also carries other external identifiers
+    (PIC, GRID, Wikidata, ISNI, VIAF, RingGold, FundRef, OrgRef, OrgReg, RRID,
+    LinkedIn, MAG) — `load_identifiers()` extracts these without any extra
+    network calls, and the assembler uses them as a fallback wherever ROR
+    itself doesn't already supply that identifier.
     """)
     return
 

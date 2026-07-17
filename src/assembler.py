@@ -18,7 +18,7 @@ with app.setup:
 
     import pandas as pd
 
-    # Output paths and the canonical 35-column order for the assembled dataset
+    # Output paths and the canonical 43-column order for the assembled dataset
     RAW_DIR    = Path("data/raw")
     CURATED_DIR = Path("data/curated")
     OUT_PARQUET = Path("data/nl_research_orgs.parquet")
@@ -29,6 +29,8 @@ with app.setup:
         "org_type", "status", "established_year", "country_code", "location_name",
         "lat", "lng", "geonames_id", "website_url", "wikipedia_url",
         "isni_id", "wikidata_id", "grid_id", "fundref_id",
+        "viaf_id", "ringgold_id", "orgref_id", "orgreg_id", "rrid_id",
+        "linkedin_url", "mag_id",
         "ori_base_org", "openalex_institution_id", "openaire_org_id",
         "alei_id", "pic_id",
         "nbn_prefix",
@@ -41,7 +43,7 @@ with app.setup:
 
 @app.function
 def fetch(force_refresh: bool = False) -> dict:
-    """Assemble all pipeline stage outputs into a single 35-column Parquet + CSV dataset.
+    """Assemble all pipeline stage outputs into a single 43-column Parquet + CSV dataset.
 
     Imports load_* from every pipeline stage module, joins on ror_id_url, and writes
     OUT_PARQUET and OUT_CSV. Local imports prevent circular dependencies at module level.
@@ -52,6 +54,7 @@ def fetch(force_refresh: bool = False) -> dict:
     from src.zenodo_baseline import load_ror_ids
     from src.openalex      import load_results as load_openalex
     from src.openaire      import load_results as load_openaire
+    from src.openaire      import load_identifiers as load_openaire_ids
     from src.alei_fetcher  import load_results as load_alei
     from src.pic_fetcher   import load_results as load_pic
     from src.barcelona     import load_results as load_barcelona
@@ -70,6 +73,7 @@ def fetch(force_refresh: bool = False) -> dict:
     baseline_ids = load_ror_ids()
     openalex     = load_openalex()
     openaire     = load_openaire()
+    openaire_ids = load_openaire_ids()
     alei         = load_alei()
     pic          = load_pic()
     barcelona    = load_barcelona(orgs)
@@ -80,6 +84,9 @@ def fetch(force_refresh: bool = False) -> dict:
     for org in orgs:
         url = org["ror_id_url"]
         m   = memberships.get(url, {})
+        # OpenAIRE's pids array duplicates some ROR-native identifiers and adds several
+        # others; used as a fallback wherever ROR itself doesn't already supply a value
+        oa_ids = openaire_ids.get(url, {})
         rows.append({
             "name":                    org.get("name"),
             "acronym":                 org.get("acronym"),
@@ -96,15 +103,22 @@ def fetch(force_refresh: bool = False) -> dict:
             "geonames_id":             org.get("geonames_id"),
             "website_url":             org.get("website_url"),
             "wikipedia_url":           org.get("wikipedia_url"),
-            "isni_id":                 org.get("isni_id"),
-            "wikidata_id":             org.get("wikidata_id"),
-            "grid_id":                 org.get("grid_id"),
-            "fundref_id":              org.get("fundref_id"),
+            "isni_id":                 org.get("isni_id") or oa_ids.get("isni_id"),
+            "wikidata_id":             org.get("wikidata_id") or oa_ids.get("wikidata_id"),
+            "grid_id":                 org.get("grid_id") or oa_ids.get("grid_id"),
+            "fundref_id":              org.get("fundref_id") or oa_ids.get("fundref_id"),
+            "viaf_id":                 oa_ids.get("viaf_id"),
+            "ringgold_id":             oa_ids.get("ringgold_id"),
+            "orgref_id":               oa_ids.get("orgref_id"),
+            "orgreg_id":               oa_ids.get("orgreg_id"),
+            "rrid_id":                 oa_ids.get("rrid_id"),
+            "linkedin_url":            oa_ids.get("linkedin_url"),
+            "mag_id":                  oa_ids.get("mag_id"),
             "ori_base_org":            url in baseline_ids,
             "openalex_institution_id": openalex.get(url),
             "openaire_org_id":         openaire.get(url),
             "alei_id":                 alei.get(url) or "",
-            "pic_id":                  pic.get(url) or "",
+            "pic_id":                  pic.get(url) or oa_ids.get("pic_id") or "",
             "nbn_prefix":              nbn.get(url, ""),
             "is_barcelona_signatory":  barcelona.get(url, False),
             "is_surf_member":          m.get("is_surf_member", False),
@@ -140,7 +154,7 @@ def header():
     mo.md("""
     ## Assembler — Dataset Assembly
 
-    Joins all pipeline stage outputs into a single 35-column dataset:
+    Joins all pipeline stage outputs into a single 43-column dataset:
 
     - **Input**: cached JSON/CSV files produced by each `src/*.py` stage
     - **Output**: `data/nl_research_orgs.parquet` and `data/nl_research_orgs.csv`
