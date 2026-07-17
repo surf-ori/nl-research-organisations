@@ -50,22 +50,30 @@ with app.setup:
         field_ids = [f["id"] for f in data.get("fields", [])]
         return [dict(zip(field_ids, record)) for record in data.get("records", [])]
 
-    def _distinct_institutions(rows: list[dict]) -> dict[str, str]:
+    def _distinct_institutions(rows: list[dict]) -> dict[str, dict]:
         """Collapse per-location rows to one entry per distinct institution name.
 
-        Returns {INSTELLINGSNAAM: INSTELLINGSCODE}, keeping the first code seen.
+        Returns {INSTELLINGSNAAM: {code, straatnaam, huisnummer, postcode, plaatsnaam}},
+        keeping the first row seen. DUO's dump only carries a combined house
+        number + addition field ("HUISNUMMER-TOEVOEGING", e.g. "10" or "12a"), not
+        separate house number and addition columns.
         """
-        out: dict[str, str] = {}
+        out: dict[str, dict] = {}
         for row in rows:
             name = row.get("INSTELLINGSNAAM")
-            code = row.get("INSTELLINGSCODE")
             if name and name not in out:
-                out[name] = code
+                out[name] = {
+                    "code":       row.get("INSTELLINGSCODE"),
+                    "straatnaam": row.get("STRAATNAAM"),
+                    "huisnummer": row.get("HUISNUMMER-TOEVOEGING"),
+                    "postcode":   row.get("POSTCODE"),
+                    "plaatsnaam": row.get("PLAATSNAAM"),
+                }
         return out
 
-    def _match(org: dict, institutions_lower: dict[str, str]) -> str | None:
+    def _match(org: dict, institutions_lower: dict[str, dict]) -> dict | None:
         """Exact-match (case-insensitive) an org's name or aliases against DUO institution
-        names; return the matched code.
+        names; return the matched institution info dict.
 
         DUO's official name is almost always the Dutch name ("Technische Universiteit
         Delft"), while ROR's is usually the English display name ("Delft University of
@@ -78,9 +86,9 @@ with app.setup:
         """
         candidates = [org["name"]] + (org.get("aliases") or "").split("|")
         for candidate in candidates:
-            code = institutions_lower.get(candidate.strip().lower())
-            if code:
-                return code
+            info = institutions_lower.get(candidate.strip().lower())
+            if info:
+                return info
         return None
 
 
@@ -89,20 +97,30 @@ def load_results(ror_orgs: list[dict]) -> dict[str, dict]:
     """Match each ROR org against the cached DUO HO and MBO institution lists.
 
     Returns a mapping of ror_id_url -> {is_ho_institution, ho_instellingscode,
-    is_mbo_institution, mbo_instellingscode}.
+    ho_straatnaam, ho_huisnummer, ho_postcode, ho_plaatsnaam,
+    is_mbo_institution, mbo_instellingscode,
+    mbo_straatnaam, mbo_huisnummer, mbo_postcode, mbo_plaatsnaam}.
     """
     ho_institutions  = {k.lower(): v for k, v in _distinct_institutions(_read_dump("ho.json")).items()}
     mbo_institutions = {k.lower(): v for k, v in _distinct_institutions(_read_dump("mbo.json")).items()}
 
     results: dict[str, dict] = {}
     for org in ror_orgs:
-        ho_code  = _match(org, ho_institutions)
-        mbo_code = _match(org, mbo_institutions)
+        ho_info  = _match(org, ho_institutions)
+        mbo_info = _match(org, mbo_institutions)
         results[org["ror_id_url"]] = {
-            "is_ho_institution":    ho_code is not None,
-            "ho_instellingscode":   ho_code,
-            "is_mbo_institution":   mbo_code is not None,
-            "mbo_instellingscode":  mbo_code,
+            "is_ho_institution":    ho_info is not None,
+            "ho_instellingscode":   ho_info.get("code") if ho_info else None,
+            "ho_straatnaam":        ho_info.get("straatnaam") if ho_info else None,
+            "ho_huisnummer":        ho_info.get("huisnummer") if ho_info else None,
+            "ho_postcode":          ho_info.get("postcode") if ho_info else None,
+            "ho_plaatsnaam":        ho_info.get("plaatsnaam") if ho_info else None,
+            "is_mbo_institution":   mbo_info is not None,
+            "mbo_instellingscode":  mbo_info.get("code") if mbo_info else None,
+            "mbo_straatnaam":       mbo_info.get("straatnaam") if mbo_info else None,
+            "mbo_huisnummer":       mbo_info.get("huisnummer") if mbo_info else None,
+            "mbo_postcode":         mbo_info.get("postcode") if mbo_info else None,
+            "mbo_plaatsnaam":       mbo_info.get("plaatsnaam") if mbo_info else None,
         }
     return results
 

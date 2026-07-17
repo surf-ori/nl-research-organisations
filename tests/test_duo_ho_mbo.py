@@ -11,6 +11,28 @@ def _make_dump(field_ids, rows):
 
 HO_FIELDS = ["_id", "SOORT HO", "INSTELLINGSCODE", "INSTELLINGSNAAM"]
 MBO_FIELDS = ["_id", "MBO INSTELLINGSSOORT - CODE", "INSTELLINGSCODE", "INSTELLINGSNAAM"]
+HO_FIELDS_WITH_ADDRESS = HO_FIELDS + ["STRAATNAAM", "HUISNUMMER-TOEVOEGING", "POSTCODE", "PLAATSNAAM"]
+
+
+def test_load_results_includes_ho_address_fields(tmp_path):
+    duo_dir = tmp_path / "duo"
+    duo_dir.mkdir()
+    (duo_dir / "ho.json").write_text(_make_dump(
+        HO_FIELDS_WITH_ADDRESS,
+        [[1, "hbo", "31FR", "NHL Stenden Hogeschool", "Rengerslaan", "10", "8917DD", "LEEUWARDEN"]],
+    ))
+    (duo_dir / "mbo.json").write_text(_make_dump(MBO_FIELDS, []))
+    with patch("src.duo_ho_mbo.DATA_DIR", duo_dir):
+        from src.duo_ho_mbo import load_results
+        orgs = [{"ror_id_url": "https://ror.org/ho-match", "name": "NHL Stenden Hogeschool"}]
+        results = load_results(orgs)
+
+    ho = results["https://ror.org/ho-match"]
+    assert ho["ho_straatnaam"] == "Rengerslaan"
+    assert ho["ho_huisnummer"] == "10"
+    assert ho["ho_postcode"] == "8917DD"
+    assert ho["ho_plaatsnaam"] == "LEEUWARDEN"
+    assert ho["mbo_straatnaam"] is None
 
 
 def test_load_results_matches_ho_and_mbo(tmp_path):

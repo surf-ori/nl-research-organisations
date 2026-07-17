@@ -182,6 +182,8 @@ def dashboard_header(mo, LOGO_PATH):
         [
             mo.md(
                 "# NL Research Organisations\n"
+                "[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.21416468.svg)]"
+                "(https://doi.org/10.5281/zenodo.21416468)\n\n"
                 "A reference table of research organisations in the Kingdom of the "
                 "Netherlands, assembled from ROR plus several enrichment sources and "
                 "curated membership lists."

@@ -14,6 +14,7 @@ mkdir -p apps/public/curated apps/public/processed apps/public/assets
 
 cp data/curated/*.csv apps/public/curated/
 cp data/processed/*.parquet apps/public/processed/
+cp data/processed/*.json apps/public/processed/
 cp data/nl_research_orgs.parquet apps/public/nl_research_orgs.parquet
 cp assets/surf-logo.svg apps/public/assets/surf-logo.svg
 
