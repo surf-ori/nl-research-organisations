@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite it as below."
+title: "NL Research Organisations"
+type: dataset
+authors:
+  - family-names: Vanderfeesten
+    given-names: Maurice
+    orcid: "https://orcid.org/0000-0001-6397-4759"
+    affiliation: SURF
+version: 1.1.0
+date-released: "2026-07-17"
+doi: 10.5281/zenodo.21416468
+url: "https://surf-ori.github.io/nl-research-organisations/"
+repository-code: "https://github.com/surf-ori/nl-research-organisations"
+license: EUPL-1.2
+keywords:
+  - research organisations
+  - Netherlands
+  - ROR
+  - OpenAlex
+  - OpenAIRE
+  - open research information
+  - research infrastructure
+  - PID
+  - persistent identifiers
+abstract: >-
+  A reference table of all research organisations in the Kingdom of the
+  Netherlands (NL, AW, CW, SX, BQ), assembled from the Research Organization
+  Registry (ROR) and enriched with identifiers from OpenAlex, OpenAIRE, the
+  Barcelona Declaration on Open Research Information, DUO's official
+  higher-education/vocational-education address lists, EU PIC, ALEI/KVK, and
+  curated Dutch consortium/membership lists (SURF, UKB, SHB, UNL, UMCNL, VH,
+  KNAW-i, NWO-i, OpenAIRE). Feeds the Dutch Open Research Information data lake.
