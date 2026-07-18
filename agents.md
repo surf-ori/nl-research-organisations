@@ -156,7 +156,9 @@ root. Keeping a new GitHub release and a new Zenodo version in sync — matching
 version strings, attaching `data/nl_research_orgs.csv`/`.parquet` alongside the
 repo snapshot, setting the CSV as the default file preview, updating
 `related_identifiers`/`custom.code:codeRepository` — follows the
-`zenodo-github-release-sync` skill (`~/.claude/skills/zenodo-github-release-sync/`),
+`zenodo-github-release-sync` skill, published at
+[github.com/surf-ori/agentic-tools/skills/zenodo-github-release-sync](https://github.com/surf-ori/agentic-tools/tree/main/skills/zenodo-github-release-sync)
+(install with `npx skills add surf-ori/agentic-tools@zenodo-github-release-sync`),
 which documents the full REST API workflow and is written to be reusable across
 projects, not specific to this repo. **Always confirm with the user before
 creating a GitHub release or publishing/editing a Zenodo deposition** — both are

@@ -24,7 +24,15 @@ Both files are committed to this repository so you can use them without running 
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) | `https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv` |
 | DUO HO/MBO address lists | `is_duo_institute`/`duo_institution_code`/`duo_institute_type`/`duo_straatnaam`/`duo_huisnummer`/`duo_postcode`/`duo_plaatsnaam` (HO and MBO combined — no ROR org matches both lists) | Yes (public JSON dumps, no key needed) | HO: `https://onderwijsdata.duo.nl/datastore/dump/bf1da9c6-c688-4873-91b1-b12c9ac2c132?format=json`<br>MBO: `https://onderwijsdata.duo.nl/datastore/dump/1a946297-a7ca-48d5-9ae8-19ad73bf8176?format=json` |
 | KB NBN catalog | `nbn_prefix` | Yes (public page, no key needed) | `https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn/nbn-catalogus` |
-| SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) | — (no external fetch; see `data/curated/*.csv`) |
+| SURF Members | `is_surf_member`/`surf_member_type` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [surf.nl/en/about/members-of-surf](https://www.surf.nl/en/about/members-of-surf) |
+| UKB | `is_ukb` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [ukb.nl/en/about-ukb/participating-members](https://ukb.nl/en/about-ukb/participating-members/) |
+| SHB | `is_shb` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [shb-online.nl/directory](https://www.shb-online.nl/directory/) |
+| UNL | `is_unl` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [universiteitenvannederland.nl/wie-wij-zijn/onze-leden](https://www.universiteitenvannederland.nl/wie-wij-zijn/onze-leden) |
+| UMCNL | `is_umcnl` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [umcnl.nl/over-de-umcs](https://www.umcnl.nl/over-de-umcs/) |
+| VH | `is_vh` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [vereniginghogescholen.nl/over-ons](https://www.vereniginghogescholen.nl/over-ons) |
+| KNAW-i | `is_knaw_institute` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [knaw.nl/en/academy-institutes](https://www.knaw.nl/en/academy-institutes) |
+| NWO-i | `is_nwoi_institute` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [nwo.nl/en/nwoi](https://www.nwo.nl/en/nwoi) |
+| OpenAIRE members | `is_openaire_member` | Curated CSV (LLM-updatable) | Not fetched automatically — curated against [openaire.eu/members](https://www.openaire.eu/members) |
 | ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; verified against the live API — see `src/alei_fetcher.py`) | `https://api.overheid.io/openkvk` (`?query=<org name or alias>`, searched per org) |
 | EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) | `https://ec.europa.eu/info/funding-tenders/opportunities/api/organisation/search` (`?name=<org name>`, searched per org) |
 
