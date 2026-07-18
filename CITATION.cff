@@ -31,3 +31,61 @@ abstract: >-
   higher-education/vocational-education address lists, EU PIC, ALEI/KVK, and
   curated Dutch consortium/membership lists (SURF, UKB, SHB, UNL, UMCNL, VH,
   KNAW-i, NWO-i, OpenAIRE). Feeds the Dutch Open Research Information data lake.
+references:
+- type: data
+  title: ROR API
+  url: https://api.ror.org/v2/organizations
+- type: data
+  title: Zenodo ORI baseline
+  url: https://zenodo.org/records/18957154/files/nl-orgs-baseline.xlsx?download=1
+- type: data
+  title: OpenAlex
+  url: https://api.openalex.org/institutions
+- type: data
+  title: OpenAIRE
+  url: https://api.openaire.eu/graph/v1/organizations
+- type: data
+  title: Barcelona Declaration
+  url: https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv
+- type: data
+  title: DUO HO address list
+  url: https://onderwijsdata.duo.nl/datastore/dump/bf1da9c6-c688-4873-91b1-b12c9ac2c132?format=json
+- type: data
+  title: DUO MBO address list
+  url: https://onderwijsdata.duo.nl/datastore/dump/1a946297-a7ca-48d5-9ae8-19ad73bf8176?format=json
+- type: data
+  title: KB NBN catalog
+  url: https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn/nbn-catalogus
+- type: data
+  title: SURF Members
+  url: https://www.surf.nl/en/about/members-of-surf
+- type: data
+  title: UKB
+  url: https://ukb.nl/en/about-ukb/participating-members/
+- type: data
+  title: SHB
+  url: https://www.shb-online.nl/directory/
+- type: data
+  title: UNL
+  url: https://www.universiteitenvannederland.nl/wie-wij-zijn/onze-leden
+- type: data
+  title: UMCNL
+  url: https://www.umcnl.nl/over-de-umcs/
+- type: data
+  title: VH
+  url: https://www.vereniginghogescholen.nl/over-ons
+- type: data
+  title: KNAW-i
+  url: https://www.knaw.nl/en/academy-institutes
+- type: data
+  title: NWO-i
+  url: https://www.nwo.nl/en/nwoi
+- type: data
+  title: OpenAIRE members
+  url: https://www.openaire.eu/members
+- type: data
+  title: ALEI / KVK (overheid.io OpenKvK)
+  url: https://api.overheid.io/openkvk
+- type: data
+  title: EU PIC (Participant Register)
+  url: https://ec.europa.eu/info/funding-tenders/opportunities/api/organisation/search
