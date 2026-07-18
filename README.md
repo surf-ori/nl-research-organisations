@@ -15,17 +15,18 @@ Both files are committed to this repository so you can use them without running 
 
 ## Data sources
 
-| Source | Provides | Auto-fetch? |
-|--------|----------|------------|
-| ROR API | 20 base columns per organisation | Yes |
-| Zenodo ORI baseline | `ori_base_org` flag | Yes |
-| OpenAlex | `openalex_institution_id`/`openalex_institution_id_url` | Yes (needs API key) |
-| OpenAIRE | `openaire_org_id`/`openaire_org_id_url`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) |
-| Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) |
-| DUO HO/MBO address lists | `is_duo_institute`/`duo_institution_code`/`duo_institute_type`/`duo_straatnaam`/`duo_huisnummer`/`duo_postcode`/`duo_plaatsnaam` (HO and MBO combined — no ROR org matches both lists) | Yes (public JSON dumps, no key needed) |
-| SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) |
-| ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; verified against the live API — see `src/alei_fetcher.py`) |
-| EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) |
+| Source | Provides | Auto-fetch? | Fetch URL |
+|--------|----------|------------|-----------|
+| ROR API | 20 base columns per organisation | Yes | `https://api.ror.org/v2/organizations` (paginated, `?filter=country.country_code:<NL\|AW\|CW\|SX\|BQ>`) |
+| Zenodo ORI baseline | `ori_base_org` flag | Yes | `https://zenodo.org/records/18957154/files/nl-orgs-baseline.xlsx?download=1` |
+| OpenAlex | `openalex_institution_id`/`openalex_institution_id_url` | Yes (needs API key) | `https://api.openalex.org/institutions` (`?filter=ror:<ror_id_url>`, one call per org) |
+| OpenAIRE | `openaire_org_id`/`openaire_org_id_url`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) | `https://api.openaire.eu/graph/v1/organizations` (`?pid=<ror_id_url>`, one call per org) |
+| Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) | `https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv` |
+| DUO HO/MBO address lists | `is_duo_institute`/`duo_institution_code`/`duo_institute_type`/`duo_straatnaam`/`duo_huisnummer`/`duo_postcode`/`duo_plaatsnaam` (HO and MBO combined — no ROR org matches both lists) | Yes (public JSON dumps, no key needed) | HO: `https://onderwijsdata.duo.nl/datastore/dump/bf1da9c6-c688-4873-91b1-b12c9ac2c132?format=json`<br>MBO: `https://onderwijsdata.duo.nl/datastore/dump/1a946297-a7ca-48d5-9ae8-19ad73bf8176?format=json` |
+| KB NBN catalog | `nbn_prefix` | Yes (public page, no key needed) | `https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn/nbn-catalogus` |
+| SURF, UKB, SHB, UNL, UMCNL, VH, KNAW-i, NWO-i, OpenAIRE members | Membership flags | Curated CSVs (LLM-updatable) | — (no external fetch; see `data/curated/*.csv`) |
+| ALEI / KVK (overheid.io OpenKvK) | `alei_id` | Yes (needs API key; verified against the live API — see `src/alei_fetcher.py`) | `https://api.overheid.io/openkvk` (`?query=<org name or alias>`, searched per org) |
+| EU PIC (Participant Register) | `pic_id` (also see the OpenAIRE fallback above) | Yes (needs API key; unverified against the live API — see `src/pic_fetcher.py`) | `https://ec.europa.eu/info/funding-tenders/opportunities/api/organisation/search` (`?name=<org name>`, searched per org) |
 
 ## Data layout
 
@@ -130,6 +131,7 @@ Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data →
 | `openaire_org_id_url` | OpenAIRE org-search URL, falls back to a ROR-filtered OpenAIRE Explore search when there's no `openaire_org_id` | string |
 | `alei_id` | ALEI/KVK | string (empty) |
 | `pic_id` | EU PIC, falls back to OpenAIRE | string (empty) |
+| `nbn_prefix` | KB NBN catalog | string (empty) |
 | `is_barcelona_signatory` | Barcelona Decl. | bool |
 | `is_duo_institute` | DUO HO/MBO address lists (exact name/alias match; HO and MBO combined) | bool |
 | `duo_institution_code` | DUO HO/MBO address lists | string |

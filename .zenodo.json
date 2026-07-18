@@ -60,6 +60,12 @@
       "scheme": "url"
     },
     {
+      "identifier": "https://data.overheid.nl/dataset/adressen_mbo",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
       "identifier": "https://overheid.io/documentatie/openkvk",
       "relation": "isDerivedFrom",
       "resource_type": "dataset",
@@ -73,6 +79,12 @@
     },
     {
       "identifier": "https://zenodo.org/records/18957154",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn/nbn-catalogus",
       "relation": "isDerivedFrom",
       "resource_type": "dataset",
       "scheme": "url"
