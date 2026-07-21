@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-This repository builds and maintains `data/nl_research_orgs.parquet` and `data/nl_research_orgs.csv` — a 47-column reference table of all research organisations in the Kingdom of the Netherlands, enriched with identifiers from ROR, OpenAlex, OpenAIRE (plus PIC/GRID/Wikidata/ISNI/VIAF/RingGold/FundRef/OrgRef/OrgReg/RRID/LinkedIn/MAG extracted from OpenAIRE's cached `pids` array), EU PIC, ALEI/KVK, the Barcelona Declaration, DUO's official HO/MBO institution address lists, and 9 Dutch consortium/membership lists.
+This repository builds and maintains `data/nl_research_orgs.parquet` and `data/nl_research_orgs.csv` — a 49-column reference table of all research organisations in the Kingdom of the Netherlands, enriched with identifiers from ROR, OpenAlex, OpenAIRE (plus PIC/GRID/Wikidata/ISNI/VIAF/RingGold/FundRef/OrgRef/OrgReg/RRID/LinkedIn/MAG extracted from OpenAIRE's cached `pids` array), EU PIC, ALEI/KVK, the Barcelona Declaration, DUO's official HO/MBO institution address lists, and 9 Dutch consortium/membership lists.
 
 A read-only snapshot (`apps/dashboard.py`) is also published to GitHub Pages via WASM on every push to `master` — see README.md's "Published read-only app" section.
 
@@ -144,6 +144,15 @@ Every `src/*.py` stage is a marimo notebook that also works as a Python module. 
   as-is, so which vocabulary a value belongs to still tells you HO vs MBO.
 - **OpenAIRE credentials** are optional but recommended for volume; without them the
   public (lower rate limit) endpoint is used automatically
+- **OpenAIRE pending records**: `src/openaire.py` calls the Graph API **v3** search
+  (`?pid=<ror_id_url>`), not v1 — v1 only matches organisations already merged into
+  OpenAIRE's curated `openorgs____::` registry, which left most Dutch organisations
+  unmatched. v3 also surfaces `pending_org_::` records (auto-derived, not yet
+  reviewed/curated), which `_classify_ids()` uses as a fallback whenever no
+  `openorgs____::` match exists — see `openaire_org_id_has_pending`/
+  `openaire_org_id_pending` in the column reference. A pending match means the
+  institution's OpenAIRE record can still be found and used, but would benefit from
+  being curated into OpenOrgs.
 - **Membership CSVs** are seeded with known data as of 2026-06 — use LLM auto-update or manual editing to keep them current
 - **ROR API** has no key requirement but rate-limits at ~1000 req/hr
 - **Barcelona Declaration CSV** column names may change — check `src/barcelona.py` if matching breaks

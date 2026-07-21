@@ -41,7 +41,7 @@ def shared_state(Path, json):
         "ror":         {"label": "ROR",             "source_url": "https://api.ror.org/v2/organizations",           "placeholder": False},
         "zenodo":      {"label": "Zenodo Baseline", "source_url": "https://zenodo.org/records/18957154",            "placeholder": False},
         "openalex":    {"label": "OpenAlex",        "source_url": "https://api.openalex.org/institutions",          "placeholder": False},
-        "openaire":    {"label": "OpenAIRE",        "source_url": "https://api.openaire.eu/graph/v1/organizations", "placeholder": False},
+        "openaire":    {"label": "OpenAIRE",        "source_url": "https://api.openaire.eu/graph/v3/organizations", "placeholder": False},
         "alei":        {"label": "ALEI / KVK",      "source_url": "https://overheid.io/documentatie/openkvk",       "placeholder": False},
         "pic":         {"label": "EU PIC",          "source_url": "https://ec.europa.eu/info/funding-tenders/",     "placeholder": False},
         "barcelona":   {"label": "Barcelona Decl.", "source_url": "https://barcelona-declaration.org",              "placeholder": False},

@@ -20,7 +20,7 @@ Both files are committed to this repository so you can use them without running 
 | ROR API | 20 base columns per organisation | Yes | `https://api.ror.org/v2/organizations` (paginated, `?filter=country.country_code:<NL\|AW\|CW\|SX\|BQ>`) |
 | Zenodo ORI baseline | `ori_base_org` flag | Yes | `https://zenodo.org/records/18957154/files/nl-orgs-baseline.xlsx?download=1` |
 | OpenAlex | `openalex_institution_id`/`openalex_institution_id_url` | Yes (needs API key) | `https://api.openalex.org/institutions` (`?filter=ror:<ror_id_url>`, one call per org) |
-| OpenAIRE | `openaire_org_id`/`openaire_org_id_url`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) | `https://api.openaire.eu/graph/v1/organizations` (`?pid=<ror_id_url>`, one call per org) |
+| OpenAIRE | `openaire_org_id`/`openaire_org_id_url`/`openaire_org_id_has_pending`/`openaire_org_id_pending`, plus `pic_id`/`viaf_id`/`ringgold_id`/`orgref_id`/`orgreg_id`/`rrid_id`/`linkedin_url`/`mag_id` and a fallback for `isni_id`/`wikidata_id`/`grid_id`/`fundref_id` — all extracted from the same cached response's `pids` array, no extra API calls | Yes (needs refresh token) | `https://api.openaire.eu/graph/v3/organizations` (`?pid=<ror_id_url>`, one call per org) |
 | Barcelona Declaration | `is_barcelona_signatory` | Yes (public CSV) | `https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv` |
 | DUO HO/MBO address lists | `is_duo_institute`/`duo_institution_code`/`duo_institute_type`/`duo_straatnaam`/`duo_huisnummer`/`duo_postcode`/`duo_plaatsnaam` (HO and MBO combined — no ROR org matches both lists) | Yes (public JSON dumps, no key needed) | HO: `https://onderwijsdata.duo.nl/datastore/dump/bf1da9c6-c688-4873-91b1-b12c9ac2c132?format=json`<br>MBO: `https://onderwijsdata.duo.nl/datastore/dump/1a946297-a7ca-48d5-9ae8-19ad73bf8176?format=json` |
 | KB NBN catalog | `nbn_prefix` | Yes (public page, no key needed) | `https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn/nbn-catalogus` |
@@ -137,6 +137,8 @@ Open the notebook (`uvx marimo run notebook.py`) and scroll to **Curate Data →
 | `openalex_institution_id_url` | OpenAlex | string |
 | `openaire_org_id` | OpenAIRE | string |
 | `openaire_org_id_url` | OpenAIRE org-search URL, falls back to a ROR-filtered OpenAIRE Explore search when there's no `openaire_org_id` | string |
+| `openaire_org_id_has_pending` | OpenAIRE — `True` if any `pending_org_::` (auto-derived, not-yet-curated) OpenAIRE record was found for this organisation, whether or not it's the one used as `openaire_org_id` | bool |
+| `openaire_org_id_pending` | OpenAIRE — any further OpenAIRE org IDs found beyond the primary `openaire_org_id` (e.g. other `pending_org_::` matches) | string (pipe-separated) |
 | `alei_id` | ALEI/KVK | string (empty) |
 | `pic_id` | EU PIC, falls back to OpenAIRE | string (empty) |
 | `nbn_prefix` | KB NBN catalog | string (empty) |
