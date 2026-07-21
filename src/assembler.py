@@ -35,6 +35,7 @@ with app.setup:
         "ori_base_org",
         "openalex_institution_id", "openalex_institution_id_url",
         "openaire_org_id", "openaire_org_id_url",
+        "openaire_org_id_has_pending", "openaire_org_id_pending",
         "alei_id", "pic_id",
         "nbn_prefix",
         "is_barcelona_signatory",
@@ -76,6 +77,7 @@ def fetch(force_refresh: bool = False) -> dict:
     from src.openalex      import load_results as load_openalex
     from src.openaire      import load_results as load_openaire
     from src.openaire      import load_identifiers as load_openaire_ids
+    from src.openaire      import load_pending_info as load_openaire_pending
     from src.alei_fetcher  import load_results as load_alei
     from src.pic_fetcher   import load_results as load_pic
     from src.barcelona     import load_results as load_barcelona
@@ -96,6 +98,7 @@ def fetch(force_refresh: bool = False) -> dict:
     openalex     = load_openalex()
     openaire     = load_openaire()
     openaire_ids = load_openaire_ids()
+    openaire_pending = load_openaire_pending()
     alei         = load_alei()
     pic          = load_pic()
     barcelona    = load_barcelona(orgs)
@@ -110,6 +113,7 @@ def fetch(force_refresh: bool = False) -> dict:
         # OpenAIRE's pids array duplicates some ROR-native identifiers and adds several
         # others; used as a fallback wherever ROR itself doesn't already supply a value
         oa_ids = openaire_ids.get(url, {})
+        oa_pending = openaire_pending.get(url, {})
         duo_match = duo.get(url, {})
         rows.append({
             "name":                    org.get("name"),
@@ -143,6 +147,8 @@ def fetch(force_refresh: bool = False) -> dict:
             "openalex_institution_id_url": _openalex_url(openalex.get(url)),
             "openaire_org_id":             openaire.get(url),
             "openaire_org_id_url":         _openaire_url(openaire.get(url), url),
+            "openaire_org_id_has_pending": oa_pending.get("has_pending", False),
+            "openaire_org_id_pending":     "|".join(oa_pending.get("pending_ids", [])),
             "alei_id":                 alei.get(url) or "",
             "pic_id":                  pic.get(url) or oa_ids.get("pic_id") or "",
             "nbn_prefix":              nbn.get(url, ""),

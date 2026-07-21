@@ -43,7 +43,7 @@ references:
   url: https://api.openalex.org/institutions
 - type: data
   title: OpenAIRE
-  url: https://api.openaire.eu/graph/v1/organizations
+  url: https://api.openaire.eu/graph/v3/organizations
 - type: data
   title: Barcelona Declaration
   url: https://barcelona-declaration.org/downloads/barcelonadeclaration_signatories_supporters.csv
